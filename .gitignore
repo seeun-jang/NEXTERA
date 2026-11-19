@@ -1,0 +1,15 @@
+# 공통
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# frontend
+node_modules/
+frontend/dist/
+
+# backend
+__pycache__/
+*.pyc
+.venv/
+backend/nextera.db

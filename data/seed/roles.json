@@ -1,0 +1,31 @@
+[
+  {
+    "id": "operator",
+    "label": "관제 운영자",
+    "can_approve": [],
+    "can_edit_policy": false
+  },
+  {
+    "id": "cooling_A",
+    "label": "A · 냉각 운영",
+    "can_approve": [
+      "cooling_change"
+    ],
+    "can_edit_policy": false
+  },
+  {
+    "id": "gpu_B",
+    "label": "B · GPU 운영",
+    "can_approve": [
+      "job_migrate",
+      "job_defer"
+    ],
+    "can_edit_policy": false
+  },
+  {
+    "id": "policy_admin",
+    "label": "정책 관리자",
+    "can_approve": [],
+    "can_edit_policy": true
+  }
+]

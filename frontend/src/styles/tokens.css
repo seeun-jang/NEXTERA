@@ -1,0 +1,40 @@
+/* 공통 프롬프트 §7 — 기능 스토리보드 v1.0 화면에서 추출한 값. 헥스는 이 파일에만 쓴다. */
+:root {
+  --nx-sidebar: #101a2b;        /* 사이드바 배경 */
+  --nx-sidebar-active: #1a2b42; /* 선택된 메뉴 */
+  --nx-sidebar-line: #23344d;   /* 사이드바 구분선 */
+  --nx-sidebar-text: #c9d3e1;   /* 사이드바 기본 글자 */
+  --nx-ink: #0b1220;            /* 본문 제목·검정 칩·주 버튼 */
+  --nx-bg: #eef3f8;             /* 콘텐츠 영역 배경 */
+  --nx-surface: #ffffff;        /* 카드 */
+  --nx-surface-2: #f2f5f8;      /* 카드 안 회색 상자 */
+  --nx-border: #e0e7f0;         /* 카드 테두리 */
+  --nx-border-strong: #c1c6d0;  /* 입력·보조 버튼 테두리 */
+  --nx-grid: #e8ecf2;           /* 차트 격자·표 구분선 */
+  --nx-text-2: #51607a;         /* 보조 텍스트 */
+  --nx-text-3: #8d97a8;         /* 캡션·브레드크럼·축 */
+  --nx-accent: #3b82f6;         /* 강조·통과·선 차트·사용률 막대 */
+  --nx-accent-soft: #e6f1ff;    /* 시뮬레이션 칩·P1 배지 배경 */
+  --nx-accent-line: #a5c9ff;    /* 시뮬레이션 칩 테두리·포커스 링 */
+
+  /* 레퍼런스(제품 UI 시안) 질감 */
+  --nx-night: #0a1424;          /* 히어로·가치 섹션 배경 */
+  --nx-night-2: #13233b;        /* 짙은 KPI 타일 그라데이션 끝 */
+  --nx-glow: #5b9dff;           /* 발광 파랑 */
+  --nx-ice: #e8f0fb;            /* 어두운 배경 위 본문 */
+  --nx-teal: #3f7f95;           /* 운영 흐름 띠 */
+  --nx-teal-2: #9fc3d1;
+  --nx-shadow: 0 1px 2px rgba(16, 30, 54, .04), 0 10px 28px rgba(16, 30, 54, .07);
+  --nx-shadow-lg: 0 24px 60px rgba(4, 12, 28, .35);
+
+  --nx-radius-card: 16px;
+  --nx-radius-inner: 8px;
+  --nx-radius-pill: 999px;
+
+  --nx-font: "Noto Sans KR", "Pretendard", system-ui, -apple-system, sans-serif;
+  --nx-mono: "JetBrains Mono", "D2Coding", ui-monospace, monospace;
+
+  --nx-sidebar-w: 240px;
+  --nx-gap: 16px;
+  --nx-pad: 24px;
+}
