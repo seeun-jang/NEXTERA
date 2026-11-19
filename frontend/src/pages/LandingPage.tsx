@@ -86,12 +86,8 @@ export default function LandingPage() {
             <button type="button" onClick={() => scrollTo("preview")}>솔루션</button>
             <button type="button" onClick={() => scrollTo("value")}>리소스</button>
           </div>
-          <div className="lp-nav-right">
-            <button type="button" className="lp-textbtn" onClick={() => start.run()}>데모 요청</button>
-            <button type="button" className="lp-pill lp-pill--light lp-pill--sm" onClick={() => start.run()} disabled={start.pending}>
-              시작하기 <Icon name="arrow-right" size={16} />
-            </button>
-          </div>
+          {/* 들어가는 버튼은 첫 화면의 "지금 체험하기" 하나로만 둔다 */}
+          <div className="lp-nav-right" aria-hidden="true" />
         </nav>
 
         <div className="lp-hero-body">
@@ -374,9 +370,6 @@ export default function LandingPage() {
                 <span>모든 판단의 근거와 결과 추적</span>
               </div>
             </div>
-            <button type="button" className="lp-pill lp-pill--light lp-pill--glow" onClick={() => start.run()} disabled={start.pending}>
-              데모 시작하기 <Icon name="arrow-right" size={18} />
-            </button>
           </div>
         </div>
       </section>

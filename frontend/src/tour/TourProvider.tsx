@@ -38,6 +38,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [running, setRunning] = useState(false);
   const [caption, setCaption] = useState<Caption | null>(null);
+  const [capTop, setCapTop] = useState(false);
   const [chapter, setChapter] = useState<(Chapter & { ms: number }) | null>(null);
   const [target, setTarget] = useState<Element | null>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -114,6 +115,14 @@ export function TourProvider({ children }: { children: ReactNode }) {
     const scrollTo = async (el: Element, block: ScrollLogicalPosition = "center") => {
       el.scrollIntoView({ behavior: "smooth", block });
       await sleep(650);
+      place(el);
+    };
+    // 자막이 지금 보여 주는 요소를 가리면 화면 위쪽으로 옮깁니다.
+    const place = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      const hitsBottom = r.bottom > window.innerHeight - 200;
+      const hitsTop = r.top < 250;
+      setCapTop(hitsBottom && !hitsTop);
     };
 
     const api: TourApi = {
@@ -128,6 +137,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
       chapter: async (c, ms = 1900) => {
         setTarget(null);
         setCaption(null);
+        setCapTop(false);
         setChapter({ ...c, ms });
         await sleep(ms);
         setChapter(null);
@@ -244,7 +254,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
           {/* 자막 */}
           {caption && (
-            <div className="tour-caption" key={caption.title}>
+            <div className={`tour-caption${capTop ? " tour-caption--top" : ""}`} key={caption.title}>
               {caption.tag && <span className="tour-tag">{caption.tag}</span>}
               <strong>{caption.title}</strong>
               {caption.sub && <span className="tour-sub">{caption.sub}</span>}
