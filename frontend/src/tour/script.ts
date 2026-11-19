@@ -9,9 +9,9 @@ export interface TourApi {
   waitFor(sel: string, text?: string, timeout?: number): Promise<Element>;
   text(sel: string, fallback?: string): Promise<string>;
   go(path: string): Promise<void>;
-  caption(c: { tag?: string; title: string; sub?: string } | null): void;
+  caption(c: { tag?: string; title: string; sub?: string; top?: boolean } | null): void;
   chapter(c: Chapter, ms?: number): Promise<void>;
-  spot(sel: string, c: { tag?: string; title: string; sub?: string } | null, ms: number, opts?: { text?: string; block?: ScrollLogicalPosition }): Promise<void>;
+  spot(sel: string, c: { tag?: string; title: string; sub?: string; top?: boolean } | null, ms: number, opts?: { text?: string; block?: ScrollLogicalPosition }): Promise<void>;
   unspot(): void;
   click(sel: string, text?: string, opts?: { moveMs?: number; afterMs?: number }): Promise<void>;
   type(sel: string, value: string): Promise<void>;
@@ -138,11 +138,11 @@ export async function runScript(t: TourApi) {
   await t.spot(".nx-proposal", { tag: "협업 · 승인", title: "실행하려면 권한 있는 사람의 승인이 필요합니다" }, 2600);
   await t.click(".nx-decide .nx-seg button", "A · 냉각 운영", { afterMs: 400 });
   t.hideCursor();
-  await t.spot(".nx-card:has(.nx-comment-input)", { tag: "협업 · 승인", title: "냉각 담당자가 의견을 남깁니다", sub: "어느 역할이든 의견은 남길 수 있습니다" }, 900);
+  await t.spot(".nx-card:has(.nx-comment-input)", { tag: "협업 · 승인", title: "냉각 담당자가 의견을 남깁니다", sub: "어느 역할이든 의견은 남길 수 있습니다", top: true }, 900);
   await t.type("input[aria-label='의견 입력']", "Z2 냉각은 현재 레벨로 유지해도 됩니다. N4가 비면 바로 팬을 교체하겠습니다.");
   await t.click(BTN, "의견 등록", { afterMs: 500 });
   t.hideCursor();
-  await t.spot(".nx-card:has(.nx-comment-input)", { tag: "협업 · 승인", title: "의견은 승인 이력에 그대로 남습니다" }, 1600);
+  await t.spot(".nx-card:has(.nx-comment-input)", { tag: "협업 · 승인", title: "의견은 승인 이력에 그대로 남습니다", top: true }, 1600);
   await t.spot(".nx-decide", { tag: "협업 · 승인", title: "냉각 담당자는 의견만 남길 수 있습니다", sub: "작업 이동 승인 권한이 없어 버튼이 잠겨 있습니다" }, 3400);
   await t.click(BTN, "그래도 서버에 승인 요청 보내 보기", { afterMs: 700 });
   t.hideCursor();
