@@ -4,6 +4,7 @@ import type { DecideResponse } from "@contracts/types";
 import { api } from "@/api/client";
 import { Button, Card, EmptyState, ErrorState, PageHeader, PageSkeleton, PolicyTag, ProviderChip, Section, StatusChip } from "@/components/common";
 import { CandidateList } from "@/components/screens/CandidateList";
+import { isHandoff } from "@/components/screens/labels";
 import { useAction, useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
 import { recallDecision, rememberDecision } from "@/state/decisionCache";
@@ -131,7 +132,7 @@ export default function DecisionPage() {
             <Card>
               {d ? (
                 <>
-                  <CandidateList candidates={cands} decision={d} />
+                  <CandidateList candidates={cands} decision={d} onPreview={(c) => navigate(`/decision/${d.decision_id}/handoff?as=${c.type}`)} />
                   {d.provider !== "zoro1" && <p className="caption" style={{ marginTop: 10 }}>후보별 확률은 실제 Zoro-1 응답일 때만 표시합니다.</p>}
                 </>
               ) : (
@@ -174,6 +175,11 @@ export default function DecisionPage() {
           <Button variant="secondary" onClick={() => run.run()} disabled={run.pending}>
             {run.pending ? "판단 중…" : d ? "같은 입력으로 다시 판단" : "AI 판단 실행"}
           </Button>
+          {d && isHandoff(selected) && (
+            <Button variant="secondary" onClick={() => navigate(`/decision/${d.decision_id}/handoff`)}>
+              사람에게 넘김 보기
+            </Button>
+          )}
           <Button arrow onClick={() => navigate("/lab/S0")} disabled={!d}>
             조건 변경 실험
           </Button>

@@ -210,9 +210,12 @@
 
 /* ---------- 구역(Section) ---------- */
 .nx-section { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.nx-section-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 0 2px; }
+.nx-section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 8px 16px; padding: 0 2px; }
+.nx-section-head > div:first-child { flex: 1 1 280px; min-width: 0; }
+.nx-section-head > :not(:first-child) { flex: none; }
 .nx-section-title { font-size: 16px; font-weight: 700; color: var(--nx-ink); }
 .nx-section-desc { margin-top: 2px; font-size: 12.5px; color: var(--nx-text-2); }
+.nx-sent { display: inline-block; }
 .nx-content { gap: 22px; }
 .nx-split { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr); gap: 20px; align-items: stretch; }
 .nx-split-side { display: flex; flex-direction: column; }
@@ -333,7 +336,8 @@
 .nx-labintro { display: flex; gap: 12px; align-items: center; padding: 14px 20px; border-radius: var(--nx-radius-card); background: linear-gradient(135deg, var(--nx-night-2), var(--nx-night)); color: #d7e3f4; font-size: 13.5px; }
 .nx-labintro svg { color: var(--nx-glow); flex: none; }
 .nx-labintro strong { color: #fff; margin-right: 6px; }
-.nx-presets { display: flex; align-items: center; gap: 6px; }
+.nx-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.nx-presets .caption, .nx-presets button { white-space: nowrap; }
 .nx-presets button { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--nx-border-strong); background: var(--nx-surface); font-size: 12.5px; font-weight: 700; cursor: pointer; }
 .nx-presets button.on { background: var(--nx-ink); color: #fff; border-color: var(--nx-ink); }
 .nx-presets button:disabled { opacity: .45; cursor: default; }
@@ -556,3 +560,46 @@
 /* 차트가 격자 칸을 밀어내지 않게 */
 .nx-chart { display: block; max-width: 100%; height: auto; }
 .nx-futures > *, .nx-split > *, .nx-abgrid > * { min-width: 0; }
+
+/* ---------- 10′ 사람에게 넘김 ---------- */
+.nx-cand.handoff { border-style: dashed; background: var(--nx-surface-2); }
+.nx-cand.first-handoff { position: relative; margin-top: 30px; }
+.nx-cands-sub { position: absolute; left: 2px; top: -24px; font-size: 12px; font-weight: 700; color: var(--nx-text-2); white-space: nowrap; }
+.nx-cand-preview { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--nx-border-strong); background: var(--nx-surface); font-size: 12px; font-weight: 700; color: var(--nx-ink); cursor: pointer; white-space: nowrap; }
+.nx-cand-preview:hover { border-color: var(--nx-ink); }
+.nx-cand-preview:focus-visible { outline: 2px solid var(--nx-accent); outline-offset: 2px; }
+
+.nx-preview-note { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px dashed var(--nx-border-strong); border-radius: var(--nx-radius-inner); background: var(--nx-surface); font-size: 13.5px; color: var(--nx-text-2); }
+.nx-preview-note svg { color: var(--nx-accent); flex: none; }
+.nx-preview-note b { color: var(--nx-ink); }
+
+.nx-handoff { display: flex; align-items: center; gap: 20px; padding: 22px 24px; border-radius: var(--nx-radius-card); background: linear-gradient(135deg, var(--nx-night-2), var(--nx-night)); color: #fff; box-shadow: 0 12px 30px rgba(10,20,36,.22); }
+.nx-handoff-icon { flex: none; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); }
+.nx-handoff-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.nx-handoff-main .caption { color: #9fb4d3; }
+.nx-handoff-main strong { font-size: 21px; }
+.nx-handoff-main p { font-size: 13.5px; color: #c4d2e6; max-width: 760px; }
+.nx-handoff-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
+.nx-handoff-side .caption { color: #9fb4d3; }
+.nx-handoff-pick { padding: 6px 14px; border-radius: 999px; background: #fff; color: var(--nx-ink); font-weight: 700; font-size: 14px; }
+
+.nx-handoff-result { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.nx-handoff-result--danger { color: var(--nx-ink); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.nx-handoff-result--muted { color: var(--nx-text-2); }
+.nx-handoff-result--ink { color: var(--nx-ink); }
+
+.nx-handoff-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; counter-reset: hs; }
+.nx-handoff-steps li { counter-increment: hs; display: flex; flex-direction: column; gap: 4px; padding: 16px 16px 16px 52px; position: relative; background: var(--nx-surface); border: 1px solid var(--nx-border); border-radius: var(--nx-radius-inner); }
+.nx-handoff-steps li::before { content: counter(hs); position: absolute; left: 16px; top: 16px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--stage, var(--nx-ink)); color: #fff; font-size: 12px; font-weight: 700; }
+.nx-handoff-steps b { font-size: 14px; color: var(--nx-ink); }
+.nx-handoff-steps span { font-size: 13px; color: var(--nx-text-2); line-height: 1.5; }
+
+.nx-ticket { display: flex; flex-direction: column; gap: 14px; }
+.nx-ticket-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nx-ticket-rows { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.nx-ticket-rows div { display: flex; flex-direction: column; gap: 2px; }
+.nx-ticket-rows dt { font-size: 12px; color: var(--nx-text-3); }
+.nx-ticket-rows dd { margin: 0; font-size: 13.5px; color: var(--nx-ink); line-height: 1.5; }
+.nx-ticket-list ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.nx-ticket-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.5; color: var(--nx-ink); }
+.nx-ticket-box { flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 4px; border: 1.5px solid var(--nx-border-strong); background: var(--nx-surface); }

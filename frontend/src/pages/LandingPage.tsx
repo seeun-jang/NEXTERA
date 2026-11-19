@@ -108,7 +108,7 @@ export default function LandingPage() {
                 {start.pending ? "시연 데이터 불러오는 중" : "지금 체험하기"} <Icon name="arrow-right" size={18} />
               </button>
               <button type="button" className="lp-pill lp-pill--ghost" onClick={() => tour.start()} disabled={tour.running}>
-                <Icon name="play" size={14} /> 자동 시연 보기 (3분)
+                <Icon name="play" size={14} /> 자동 시연 보기 (2분)
               </button>
             </div>
             {start.error != null && (

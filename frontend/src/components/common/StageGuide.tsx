@@ -18,6 +18,8 @@ interface Step {
   desc: string;
   next?: string;
   match: (p: string) => boolean;
+  /** 본 흐름의 갈림길 화면이면, 진행 막대에서 대신 표시할 단계 번호 */
+  alt?: string;
 }
 
 export const STEPS: Step[] = [
@@ -30,6 +32,7 @@ export const STEPS: Step[] = [
   { no: "08", title: "병렬 미래", part: 2, desc: "같은 조건에서 행동만 바꿨을 때의 5분 미래를 비교합니다.", next: "09 안전 검사", match: (p) => p.endsWith("/futures") },
   { no: "09", title: "안전 검사", part: 3, desc: "모델과 분리된 코드가 AI의 선택이 회사 규칙상 허용되는지 검사합니다.", next: "10 협업·승인", match: (p) => p.endsWith("/validate") },
   { no: "10", title: "협업·승인", part: 3, desc: "권한 있는 담당자만 실행을 승인할 수 있습니다.", next: "11 실행 및 결과", match: (p) => p.startsWith("/approvals") },
+  { no: "10", alt: "10", title: "사람에게 넘김", part: 3, desc: "AI가 설비 조작 대신 사람에게 판단을 넘긴 경우입니다. 승인·실행 대신 요청이 기록됩니다.", next: "12 결정 영수증", match: (p) => p.endsWith("/handoff") },
   { no: "11", title: "실행 및 결과", part: 3, desc: "실행 직전에 다시 검사한 뒤 가상 환경에서만 실행하고 결과를 비교합니다.", next: "12 결정 영수증", match: (p) => p.startsWith("/executions") },
   { no: "12", title: "결정 영수증", part: 4, desc: "한 번의 결정에 대한 조건 · 후보 · 검사 · 승인 · 실행을 하나의 기록으로 봅니다.", next: "13 기록·분석", match: (p) => p.startsWith("/receipts") },
   { no: "13", title: "기록·분석", part: 4, desc: "쌓인 결정 기록에서 실패 패턴을 찾아 정책과 시스템 개선으로 연결합니다.", match: (p) => p.startsWith("/analytics") },
@@ -43,7 +46,9 @@ export function StageGuide({ pathname }: { pathname: string }) {
   const step = stepOf(pathname);
   if (!step) return null;
   const part = PARTS[step.part];
-  const idx = STEPS.indexOf(step);
+  const ref = step.alt ? STEPS.find((s) => s.no === step.alt && !s.alt) ?? step : step;
+  const idx = STEPS.indexOf(ref);
+  const main = STEPS.filter((s) => !s.alt);
   return (
     <div className="nx-stage" style={{ ["--stage" as string]: part.color }}>
       <div className="nx-stage-top">
@@ -63,13 +68,13 @@ export function StageGuide({ pathname }: { pathname: string }) {
       </div>
       <div className="nx-stage-bar" aria-label={`전체 12단계 중 ${idx + 1}번째`}>
         {PARTS.map((p, pi) => {
-          const steps = STEPS.filter((s) => s.part === pi);
+          const steps = main.filter((s) => s.part === pi);
           return (
             <div key={p.key} className={`nx-stage-seg${pi === step.part ? " on" : pi < step.part ? " done" : ""}`} style={{ ["--seg" as string]: p.color }}>
               <span className="nx-stage-seg-name">{p.name}</span>
               <span className="nx-stage-ticks">
                 {steps.map((s) => (
-                  <span key={s.no} className={s === step ? "cur" : STEPS.indexOf(s) < idx ? "past" : ""} title={`${s.no} ${s.title}`} />
+                  <span key={s.no} className={s === ref ? "cur" : STEPS.indexOf(s) < idx ? "past" : ""} title={`${s.no} ${s.title}`} />
                 ))}
               </span>
             </div>

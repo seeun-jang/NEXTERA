@@ -110,12 +110,13 @@ export default function LabPage() {
         <div className="nx-split">
           <Section
             title="바꿀 조건"
-            desc="주 시연은 한 번에 하나만 바꿉니다 · 실험 값은 이 실험 안에서만 쓰이고 운영에 적용되지 않습니다"
+            desc="조건은 한 번에 하나씩 바꿔 비교합니다. 실험 값은 운영에 적용되지 않습니다."
             right={
               <div className="nx-presets">
                 <span className="caption">빠른 설정</span>
-                <button type="button" className={changes.deadline_min === 3 && changedKeys.length === 1 ? "on" : ""} onClick={() => preset(3)}>마감 3분 (단축)</button>
-                <button type="button" className={changes.deadline_min === 8 && changedKeys.length === 1 ? "on" : ""} onClick={() => preset(8)}>마감 8분 (연장)</button>
+                <button type="button" className={changes.deadline_min === 3 && changedKeys.length === 1 ? "on" : ""} onClick={() => preset(3)}>마감 3분으로</button>
+                <button type="button" className={changes.deadline_min === 8 && changedKeys.length === 1 ? "on" : ""} onClick={() => preset(8)}>마감 8분으로</button>
+                <button type="button" className={changes.deadline_min === 2 && changedKeys.length === 1 ? "on" : ""} onClick={() => preset(2)} title="어떤 설비 조작도 마감 안에 끝나지 않는 조건">마감 2분으로</button>
                 <button type="button" onClick={() => setChanges({})} disabled={!changedKeys.length}>원래 값으로</button>
               </div>
             }
@@ -189,7 +190,7 @@ export default function LabPage() {
                   })}
                 </ul>
               ) : (
-                <p className="muted" style={{ fontSize: 13 }}>아직 바꾼 조건이 없습니다. 왼쪽에서 조건 하나를 바꾸거나 "마감 3분"을 눌러 보세요.</p>
+                <p className="muted" style={{ fontSize: 13 }}>아직 바꾼 조건이 없습니다. 왼쪽에서 조건 하나를 바꾸거나 "마감 3분으로"를 눌러 보세요.</p>
               )}
               {changedKeys.length > 1 && <p className="caption" style={{ marginTop: 8 }}>조건을 여러 개 바꾸면 무엇 때문에 판단이 달라졌는지 구분하기 어렵습니다.</p>}
               <p className="caption" style={{ marginTop: 8 }}>나머지 {CONDS.length - changedKeys.length}개 조건은 실제 값과 같습니다.</p>

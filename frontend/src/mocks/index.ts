@@ -399,6 +399,11 @@ export const mockApi: NexteraApi = {
     S.experiments.set(branchId, exp);
     const desc = Object.entries(req.changes).map(([k, v]) => `${k}=${v}`).join(", ");
     log({ at: now(1), actor: "operator", type: "experiment_run", summary: `실험 ${branchId} (${desc} 가정)`, ref_id: branchId, is_assumption: true });
+    const sel = candidates.find((c) => c.id === decision.selected_id);
+    if (sel && (sel.type === "escalate" || sel.type === "request_info")) {
+      // 설비 조작 대신 사람에게 넘긴 판단 — 승인·실행 없이 기록만 남긴다 (알림 발송은 MOCK)
+      log({ at: now(1), actor: "system", type: "escalated", summary: `${sel.label} · 허용 후보가 조건을 만족하지 못해 사람에게 넘김 (알림 MOCK)`, ref_id: branchId, is_assumption: true });
+    }
     return clone(exp);
   },
 

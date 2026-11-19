@@ -3,6 +3,7 @@ import type { Estimate, Experiment } from "@contracts/types";
 import { api } from "@/api/client";
 import { Button, Card, ErrorState, Icon, PageHeader, PageSkeleton, ProviderChip, Section, StatusChip } from "@/components/common";
 import { useApi } from "@/hooks/useApi";
+import { isHandoff } from "@/components/screens/labels";
 import { useDemo } from "@/state/DemoContext";
 
 // SCREEN 07 · A/B 판단 비교 — 같은 스냅샷에서 조건 하나만 바꾼 두 판단을 나란히 놓고 무엇이 왜 달라졌는지 보여 준다.
@@ -157,6 +158,8 @@ export default function ComparePage() {
   const { cmp, cf } = data;
   const { base: A, branch: B } = cmp;
   const same = A.decision.selected_id === B.decision.selected_id;
+  const bCand = B.candidates.find((c) => c.id === B.decision.selected_id);
+  const handoff = isHandoff(bCand);
   const changed = cmp.changed_keys.map((k) => {
     const meta = KEY_LABEL[k] ?? { label: k };
     const before = k === "deadline_min" ? deadlineOf(A) : "실제 값";
@@ -165,7 +168,9 @@ export default function ComparePage() {
   });
 
   let why: string;
-  if (same) {
+  if (handoff) {
+    why = `마감이 ${deadlineOf(B)}분이면 허용된 설비 조작 중 어느 것도 마감 안에 끝나지 않습니다. 그래서 AI는 무리해서 실행하지 않고 "${label(B)}"을(를) 골라 사람에게 넘겼습니다. B 열의 수치는 설비를 그대로 뒀을 때의 예상이라, 사람이 직접 조치해야 하는 이유이기도 합니다.`;
+  } else if (same) {
     why = "두 판단이 같습니다. 같은 행동이 여전히 적절하거나 다른 후보가 조건을 만족하지 못할 수 있습니다. 근거와 예상 결과는 아래에서 비교할 수 있습니다.";
   } else if (cf) {
     const over = Math.round((cf.job_finish_min.J07 - deadlineOf(B)) * 10) / 10;
@@ -180,7 +185,7 @@ export default function ComparePage() {
 
   const bars = [
     { name: `A · ${label(A)}`, finish: A.estimate.job_finish_min.J07, deadline: deadlineOf(A) },
-    { name: `B · ${label(B)}`, finish: B.estimate.job_finish_min.J07, deadline: deadlineOf(B), ink: true },
+    { name: handoff ? `B · ${label(B)} (설비 조작 없음)` : `B · ${label(B)}`, finish: B.estimate.job_finish_min.J07, deadline: deadlineOf(B), ink: true },
     ...(cf ? [{ name: `B에서 "${label(A)}"을(를) 골랐다면`, finish: cf.job_finish_min.J07, deadline: deadlineOf(B) }] : []),
   ];
 
@@ -222,9 +227,15 @@ export default function ComparePage() {
           <Button variant="secondary" onClick={() => navigate(`/decision/${decisionId ?? A.decision.decision_id}/futures`)}>
             대안별 예상 결과 보기
           </Button>
-          <Button arrow onClick={() => navigate(`/decision/${decisionId ?? A.decision.decision_id}/validate`)}>
-            실행 전 안전 검사
-          </Button>
+          {handoff ? (
+            <Button arrow onClick={() => navigate(`/decision/${decisionId ?? A.decision.decision_id}/handoff?branch=${B.branch_id}`)}>
+              사람에게 넘김 보기
+            </Button>
+          ) : (
+            <Button arrow onClick={() => navigate(`/decision/${decisionId ?? A.decision.decision_id}/validate`)}>
+              실행 전 안전 검사
+            </Button>
+          )}
         </div>
       </div>
     </>
