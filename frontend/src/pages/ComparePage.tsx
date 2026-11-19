@@ -7,6 +7,9 @@ import { useDemo } from "@/state/DemoContext";
 
 // SCREEN 07 · A/B 판단 비교 — 같은 스냅샷에서 조건 하나만 바꾼 두 판단을 나란히 놓고 무엇이 왜 달라졌는지 보여 준다.
 // 판단을 억지로 다르게 만들지 않는다. 같게 나와도 그대로 보여 준다.
+
+// 반사실 추정은 분기마다 한 번만 계산(화면 재방문·개발 모드 이중 실행 때 영수증에 중복 기록되지 않게)
+const cfCache = new Map<string, Promise<Estimate | null>>();
 const KEY_LABEL: Record<string, { label: string; unit?: string }> = {
   deadline_min: { label: "작업 마감", unit: "분" },
   cooling_max: { label: "냉각 용량(Z2 최대)" },
@@ -110,10 +113,19 @@ export default function ComparePage() {
   const { data, error, loading, reload } = useApi(async () => {
     const cmp = await api.compareExperiment(branch);
     // 반사실: B 조건에서 A가 고른 행동을 했다면? (같은 시뮬레이터로 추정)
-    const cf =
-      cmp.base.decision.selected_id !== cmp.branch.decision.selected_id
-        ? (await api.futures({ decision_id: cmp.branch.decision.decision_id, snapshot_id: branch, action_ids: [cmp.base.decision.selected_id], horizon_ticks: 10 })).estimates[0]
-        : null;
+    // 데모를 초기화하면 분기 번호가 다시 S0-b1부터라, 판단 시각까지 키에 넣는다
+    const key = `${branch}@${cmp.branch.decision.created_at}`;
+    if (!cfCache.has(key)) {
+      cfCache.set(
+        key,
+        cmp.base.decision.selected_id !== cmp.branch.decision.selected_id
+          ? api
+              .futures({ decision_id: cmp.branch.decision.decision_id, snapshot_id: branch, action_ids: [cmp.base.decision.selected_id], horizon_ticks: 10 })
+              .then((r) => r.estimates[0] ?? null)
+          : Promise.resolve(null),
+      );
+    }
+    const cf = await cfCache.get(key)!;
     return { cmp, cf };
   }, [branch]);
 

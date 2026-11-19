@@ -415,3 +415,80 @@
 .nx-testpanel { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: var(--nx-radius-card); border: 1.5px dashed var(--nx-ink); background: var(--nx-surface); }
 .nx-testpanel-head { display: flex; justify-content: space-between; align-items: center; }
 .nx-code--light { background: var(--nx-surface-2); color: var(--nx-ink); }
+
+/* ---------- 10 협업·승인 ---------- */
+.nx-proposal { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 18px 22px; border-radius: var(--nx-radius-card); background: linear-gradient(135deg, var(--nx-night-2), var(--nx-night)); color: #fff; box-shadow: 0 12px 30px rgba(10,20,36,.22); }
+.nx-proposal-main { display: flex; flex-direction: column; gap: 6px; }
+.nx-proposal-main .caption, .nx-proposal-status .caption { color: #9fb4d3; }
+.nx-proposal-main strong { font-size: 21px; }
+.nx-proposal-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.nx-proposal .nx-chip--mock, .nx-proposal .nx-chip--neutral { background: transparent; color: #e8f0fb; border-color: rgba(255,255,255,.4); }
+.nx-proposal-status { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.nx-proposal-status strong { font-size: 18px; }
+.nx-row-me td { background: var(--nx-accent-soft); }
+.nx-me { display: inline-flex; height: 18px; padding: 0 7px; margin-left: 6px; border-radius: 999px; background: var(--nx-accent); color: #fff; font-size: 11px; align-items: center; }
+.nx-comments { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.nx-comments li { display: flex; gap: 10px; }
+.nx-comments p { margin-top: 2px; font-size: 13.5px; }
+.nx-avatar { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--nx-surface-2); border: 1px solid var(--nx-border); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.nx-comment-input { display: flex; gap: 8px; }
+.nx-comment-input input { flex: 1; height: 34px; border: 1px solid var(--nx-border-strong); border-radius: 10px; padding: 0 12px; font: inherit; font-size: 13.5px; }
+.nx-decide { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; background: var(--nx-surface); border: 2px solid var(--nx-ink); border-radius: var(--nx-radius-card); box-shadow: var(--nx-shadow); }
+.nx-decide-role { display: flex; flex-direction: column; gap: 6px; }
+.nx-decide-role .nx-seg { width: 100%; }
+.nx-decide-role .nx-seg button { flex: 1; }
+.nx-decide-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.nx-decide-row .nx-btn { width: 100%; }
+.nx-decide-block { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; border: 1px dashed var(--nx-border-strong); background: var(--nx-surface-2); }
+.nx-decide-block > svg { margin-top: 3px; flex: none; }
+.nx-decide-block > div { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.nx-decide-block span { color: var(--nx-text-2); }
+.nx-linkbtn { align-self: flex-start; margin-top: 4px; background: none; border: 0; padding: 0; color: var(--nx-accent); font-weight: 700; font-size: 12.5px; cursor: pointer; text-decoration: underline; }
+.nx-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.nx-history li { display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; padding: 9px 0; border-top: 1px solid var(--nx-grid); font-size: 13px; align-items: baseline; }
+.nx-history li:first-child { border-top: 0; }
+.nx-history li.bad span:nth-child(2) { font-weight: 700; }
+
+/* ---------- 11 실행 및 결과 ---------- */
+.nx-exec-banner { display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-radius: var(--nx-radius-card); background: var(--nx-surface); border: 1px solid var(--nx-border); box-shadow: var(--nx-shadow); position: relative; overflow: hidden; }
+.nx-exec-banner::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--nx-accent); }
+.nx-exec-banner.bad::before { background: var(--nx-ink); }
+.nx-exec-mark { width: 44px; height: 44px; border-radius: 50%; background: var(--nx-accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.nx-exec-banner.bad .nx-exec-mark { background: var(--nx-ink); }
+.nx-exec-banner > div { display: flex; flex-direction: column; gap: 2px; }
+.nx-exec-banner strong { font-size: 17px; }
+.nx-exec-banner span { font-size: 13px; color: var(--nx-text-2); }
+.nx-kpis--3 { grid-template-columns: repeat(3, 1fr); }
+.nx-after { font-weight: 700; color: var(--nx-accent); }
+.nx-steps-v { list-style: none; margin: 0; padding: 0; position: relative; }
+.nx-steps-v li { display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; position: relative; font-size: 13.5px; }
+.nx-steps-v li + li::before { content: ""; position: absolute; left: 10px; top: -10px; height: 20px; width: 2px; background: var(--nx-accent-line); }
+.nx-steps-v .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--nx-accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+.nx-steps-v li.bad .dot { background: var(--nx-ink); }
+.nx-steps-v .lbl { font-weight: 700; }
+
+/* ---------- 12 결정 영수증 ---------- */
+.nx-receipt-head { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; border-radius: var(--nx-radius-card); overflow: hidden; background: rgba(143,182,255,.16); box-shadow: 0 12px 30px rgba(10,20,36,.22); }
+.nx-receipt-head > div { display: flex; flex-direction: column; gap: 4px; padding: 14px 18px; background: linear-gradient(135deg, var(--nx-night-2), var(--nx-night)); color: #fff; }
+.nx-receipt-head .caption { color: #9fb4d3; }
+.nx-receipt-head strong { font-size: 15px; }
+.nx-receipt-head .nx-chip--mock { background: transparent; color: #fff; border-color: rgba(255,255,255,.7); align-self: flex-start; }
+.nx-row-pick td { background: var(--nx-accent-soft); }
+.nx-approval-line { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.nx-approval-line > div:first-child { display: flex; flex-direction: column; }
+.nx-approval-roles { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; font-size: 13px; color: var(--nx-text-2); }
+.nx-approval-roles .req { color: var(--nx-ink); font-weight: 700; }
+.nx-timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+.nx-timeline::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--nx-grid); }
+.nx-timeline li { display: grid; grid-template-columns: 16px 1fr; gap: 12px; padding: 7px 0; position: relative; }
+.nx-timeline-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--nx-surface); border: 2px solid var(--nx-accent-line); margin-top: 2px; display: inline-flex; align-items: center; justify-content: center; color: #fff; position: relative; z-index: 1; }
+.nx-timeline li.t-decision_made .nx-timeline-dot, .nx-timeline li.t-approved .nx-timeline-dot, .nx-timeline li.t-executed .nx-timeline-dot { background: var(--nx-accent); border-color: var(--nx-accent); }
+.nx-timeline li.t-blocked .nx-timeline-dot { background: var(--nx-ink); border-color: var(--nx-ink); border-radius: 4px; }
+.nx-timeline-meta { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--nx-text-3); }
+.nx-timeline-text { font-size: 13px; margin-top: 1px; }
+.nx-timeline li.t-blocked .nx-timeline-text { font-weight: 700; }
+.nx-mini { display: inline-flex; align-items: center; height: 16px; padding: 0 6px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.nx-mini--mock { border: 1px dashed var(--nx-ink); color: var(--nx-ink); }
+.nx-mini--zoro { background: var(--nx-ink); color: #fff; }
+.nx-mini--assume { background: var(--nx-accent-soft); color: var(--nx-ink); border: 1px dashed var(--nx-accent-line); }
+.nx-receipt-note { display: flex; align-items: center; gap: 8px; justify-content: flex-end; font-size: 12px; color: var(--nx-text-3); }

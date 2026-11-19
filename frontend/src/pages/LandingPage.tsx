@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Snapshot } from "@contracts/types";
 import { api } from "@/api/client";
@@ -6,6 +7,7 @@ import { CubeField, GlassPanels, RackArt, WaveLines } from "@/components/landing
 import { useAction, useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
 import { clearDecisions } from "@/state/decisionCache";
+import { useTour } from "@/tour/TourProvider";
 
 // SCREEN 01 · 메인 · 제품 진입 — 제품 UI 시안(레퍼런스) 구성을 따른다.
 // 수치는 시드 S0(GET /api/state)에서 읽는다. 검증되지 않은 고객·파트너 로고는 넣지 않는다.
@@ -54,6 +56,15 @@ export default function LandingPage() {
     navigate(to);
   });
   const sum = state.data ? summarize(state.data) : null;
+  const tour = useTour();
+  // 녹화용: 주소에 ?tour=1을 붙이면 자동 시연이 바로 시작된다
+  useEffect(() => {
+    if (window.location.search.includes("tour=1") && !tour.running) {
+      const id = window.setTimeout(() => tour.start(), 900);
+      return () => clearTimeout(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
@@ -100,8 +111,8 @@ export default function LandingPage() {
               <button type="button" className="lp-pill lp-pill--light" onClick={() => start.run()} disabled={start.pending}>
                 {start.pending ? "시연 데이터 불러오는 중" : "지금 체험하기"} <Icon name="arrow-right" size={18} />
               </button>
-              <button type="button" className="lp-pill lp-pill--ghost" onClick={() => scrollTo("preview")}>
-                <Icon name="play" size={14} /> 제품 미리보기
+              <button type="button" className="lp-pill lp-pill--ghost" onClick={() => tour.start()} disabled={tour.running}>
+                <Icon name="play" size={14} /> 자동 시연 보기 (3분)
               </button>
             </div>
             {start.error != null && (
