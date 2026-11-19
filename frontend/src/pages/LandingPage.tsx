@@ -5,6 +5,7 @@ import { ErrorState, Icon, Kpi, StatusChip, Stepper, TempChart, type IconName } 
 import { CubeField, GlassPanels, RackArt, WaveLines } from "@/components/landing/LandingArt";
 import { useAction, useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
+import { clearDecisions } from "@/state/decisionCache";
 
 // SCREEN 01 · 메인 · 제품 진입 — 제품 UI 시안(레퍼런스) 구성을 따른다.
 // 수치는 시드 S0(GET /api/state)에서 읽는다. 검증되지 않은 고객·파트너 로고는 넣지 않는다.
@@ -48,6 +49,7 @@ export default function LandingPage() {
   const state = useApi(() => api.getState("S0"), []);
   const start = useAction(async (to: string = "/operations") => {
     await api.resetDemo(); // 시연 스냅샷 S0로 초기화
+    clearDecisions();
     resetIds();
     navigate(to);
   });
