@@ -7,7 +7,7 @@ import { useApi } from "@/hooks/useApi";
 import { fromChanges, loadScenario } from "@/state/scenario";
 import { futuresOnce } from "@/state/decisionCache";
 
-// SCREEN 08 · 병렬 미래 (Parallel Futures) — 같은 스냅샷 · 같은 마감 · 같은 시드에서 행동만 바꿔 5분 미래를 비교한다.
+// SCREEN 06 · 대안별 결과 (Parallel Futures) — 같은 스냅샷 · 같은 마감 · 같은 시드에서 행동만 바꿔 5분 미래를 비교한다.
 // 조건을 바꾸는 06·07과 다른 축이다. 모든 수치는 시뮬레이터 추정.
 const RISK = { low: "낮음", medium: "보통", high: "높음" } as const;
 const LETTER = ["A", "B", "C"];
@@ -87,8 +87,8 @@ export default function FuturesPage() {
 
   const header = (
     <PageHeader
-      crumbs={["의사결정", "병렬 미래"]}
-      title="병렬 미래 · Parallel Futures"
+      crumbs={["의사결정", "대안별 결과"]}
+      title="대안별 결과 · Parallel Futures"
       right={
         <>
           <StatusChip variant="sim" />
@@ -131,7 +131,7 @@ export default function FuturesPage() {
         <div className="nx-changed nx-changed--neutral">
           <span className="nx-changed-label">같은 조건</span>
           <strong>설정한 상황 S0 · 마감 {deadline}분 · 같은 난수 시드 — 행동만 다르게</strong>
-          <span className="caption">조건을 바꾸는 실험은 06 조건 실험 · 07 A/B 비교에서 합니다</span>
+          <span className="caption">상황과 조건은 01 상황 설정에서 바꿉니다</span>
         </div>
 
         <Section title={`행동 ${actions.length}개의 5분 미래`} desc="온도 · 냉각 에너지 · 마감 · 위험 · 제약 위반을 같은 기준으로 계산">
@@ -149,8 +149,8 @@ export default function FuturesPage() {
         </div>
 
         <div className="nx-actions">
-          <Button variant="secondary" onClick={() => navigate("/lab/S0")}>
-            조건 실험으로
+          <Button variant="secondary" onClick={() => navigate("/scenario")}>
+            상황 다시 설정
           </Button>
           <Button arrow onClick={() => navigate(`/decision/${id}/validate`)}>
             실행 전 안전 검사

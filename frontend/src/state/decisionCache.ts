@@ -23,7 +23,7 @@ export function recallValidation(key: string): Validation | null {
   return validations.get(key) ?? null;
 }
 
-// 병렬 미래(08) 추정 — 같은 결정에 대해 한 번만 계산
+// 대안별 결과(06) 추정 — 같은 결정에 대해 한 번만 계산
 const futures = new Map<string, Promise<Estimate[]>>();
 
 export function futuresOnce(key: string, run: () => Promise<Estimate[]>): Promise<Estimate[]> {

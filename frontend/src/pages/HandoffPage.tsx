@@ -6,10 +6,10 @@ import { Button, Card, ErrorState, Icon, PageHeader, PageSkeleton, ProviderChip,
 import { isHandoff } from "@/components/screens/labels";
 import { useApi } from "@/hooks/useApi";
 import { recallDecision } from "@/state/decisionCache";
+import { describe, loadScenario } from "@/state/scenario";
 
-// SCREEN 10′ · 사람에게 넘김 — AI가 설비 조작 대신 "운영자 호출" 또는 "추가 정보 요청"을 고른 경우.
+// SCREEN 08′ · 사람에게 넘김 — AI가 설비 조작 대신 "운영자 호출" 또는 "추가 정보 요청"을 고른 경우.
 // 승인·실행 단계로 가지 않고, 누구에게 무엇을 요청했는지와 그 이유를 보여 준 뒤 결정 영수증으로 이어진다.
-// ?branch=<실험 분기>  : 조건 실험(06)에서 나온 판단을 본다
 // ?as=request_info|escalate : 실제로 선택되지 않은 행동을 "선택되면 이렇게 됩니다"로 미리 본다 (화면에 미리보기 표시)
 
 type HandoffType = Extract<ActionType, "request_info" | "escalate">;
@@ -35,14 +35,6 @@ const CONTENT: Record<HandoffType, { title: string; lead: string; to: RoleId[]; 
   },
 };
 
-const CHANGE_LABEL: Record<string, (v: unknown) => string> = {
-  deadline_min: (v) => `마감 ${v}분`,
-  cooling_max: (v) => `Z2 냉각 상한 레벨 ${v}`,
-  n2_gpus_free: (v) => `N2 여유 GPU ${v}장`,
-  j07_priority: (v) => `J07 우선순위 ${v}`,
-  objective: (v) => `목표 ${v === "energy" ? "에너지 우선" : v === "performance" ? "성능 우선" : "균형"}`,
-  approval_delay_min: (v) => `승인 지연 ${v}분`,
-};
 
 function resultOf(c: Candidate, selectedId: string | undefined): { text: string; tone: "danger" | "muted" | "ink" } {
   if (c.id === selectedId) return { text: "AI 선택", tone: "ink" };
@@ -54,15 +46,10 @@ export default function HandoffPage() {
   const navigate = useNavigate();
   const { id = "DR-0412-01" } = useParams<{ id: string }>();
   const [sp] = useSearchParams();
-  const branch = sp.get("branch");
   const asParam = sp.get("as");
   const as: HandoffType | null = asParam === "request_info" || asParam === "escalate" ? asParam : null;
 
-  const { data, error, loading, reload } = useApi(async () => {
-    const rc = await api.getReceipt(id);
-    const exp = branch && branch !== "S0" ? (await api.compareExperiment(branch)).branch : null;
-    return { rc, exp };
-  }, [id, branch]);
+  const { data, error, loading, reload } = useApi(async () => ({ rc: await api.getReceipt(id) }), [id]);
 
   const header = (
     <PageHeader
@@ -71,7 +58,7 @@ export default function HandoffPage() {
       right={
         <>
           <StatusChip variant="sim" />
-          {data && <ProviderChip provider={data.exp?.decision.provider ?? data.rc.provider} />}
+          {data && <ProviderChip provider={data.rc.provider} />}
         </>
       }
     />
@@ -89,16 +76,16 @@ export default function HandoffPage() {
       </>
     );
 
-  const { rc, exp } = data;
-  const cands = exp?.candidates ?? rc.candidates;
-  const selectedId = exp?.decision.selected_id ?? rc.branches.find((b) => b.branch_id === "S0")?.selected_id;
+  const { rc } = data;
+  const cands = rc.candidates;
+  const selectedId = rc.branches.find((b) => b.branch_id === "S0")?.selected_id;
   const selected = cands.find((c) => c.id === selectedId);
   const real = isHandoff(selected) && (!as || selected!.type === as);
   const kind: HandoffType = real ? (selected!.type as HandoffType) : as ?? "escalate";
   const target = cands.find((c) => c.type === kind);
   const content = CONTENT[kind];
-  const rationale = real ? exp?.decision.rationale ?? recallDecision("S0")?.decision.rationale ?? content.fallback : content.fallback;
-  const changes = Object.entries(exp?.changes ?? {}).map(([k, v]) => CHANGE_LABEL[k]?.(v) ?? `${k} ${v}`);
+  const rationale = real ? recallDecision("S0")?.decision.rationale ?? content.fallback : content.fallback;
+  const changes = describe(loadScenario().changes);
   const equipment = cands.filter((c) => !isHandoff(c));
 
   return (
@@ -131,7 +118,7 @@ export default function HandoffPage() {
 
         <div className="nx-split">
           <div className="nx-col nx-split-main">
-            <Section title="왜 사람에게 넘겼나요" desc={changes.length ? `가정한 조건: ${changes.join(" · ")}` : "실제 조건 (S0)에서의 판단"}>
+            <Section title="왜 사람에게 넘겼나요" desc={changes.length ? `설정한 상황: ${changes.join(" · ")}` : "기본 상황에서의 판단"}>
               <Card>
                 <table className="nx-table">
                   <thead>
@@ -215,8 +202,8 @@ export default function HandoffPage() {
         </div>
 
         <div className="nx-actions">
-          <Button variant="secondary" onClick={() => navigate("/lab/S0")}>
-            조건 다시 바꾸기
+          <Button variant="secondary" onClick={() => navigate("/scenario")}>
+            상황 다시 설정
           </Button>
           <Button arrow onClick={() => navigate(`/receipts/${id}`)}>
             결정 영수증 확인

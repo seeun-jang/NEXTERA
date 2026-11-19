@@ -1,12 +1,10 @@
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Route, Routes, Navigate } from "react-router-dom";
 import { AppShell, Button, Card, EmptyState, PageHeader } from "@/components/common";
 import LandingPage from "@/pages/LandingPage";
 import OperationsPage from "@/pages/OperationsPage";
 import IncidentPage from "@/pages/IncidentPage";
 import PoliciesPage from "@/pages/PoliciesPage";
 import DecisionPage from "@/pages/DecisionPage";
-import LabPage from "@/pages/LabPage";
-import ComparePage from "@/pages/ComparePage";
 import FuturesPage from "@/pages/FuturesPage";
 import ValidatePage from "@/pages/ValidatePage";
 import ApprovalPage from "@/pages/ApprovalPage";
@@ -30,8 +28,8 @@ export default function App() {
         <Route path="/decision/:id/validate" element={<ValidatePage />} />
         <Route path="/decision/:id/handoff" element={<HandoffPage />} />
         <Route path="/scenario" element={<ScenarioPage />} />
-        <Route path="/lab/:snapshot" element={<LabPage />} />
-        <Route path="/lab/:branch/compare" element={<ComparePage />} />
+        {/* 예전 조건 실험 주소는 상황 설정으로 보낸다 (조건은 이제 01에서 정한다) */}
+        <Route path="/lab/*" element={<Navigate to="/scenario" replace />} />
         <Route path="/approvals" element={<ApprovalPage />} />
         <Route path="/approvals/:id" element={<ApprovalPage />} />
         <Route path="/executions/:id" element={<ExecutionPage />} />

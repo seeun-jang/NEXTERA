@@ -4,7 +4,7 @@ import { api, type AnalyticsResponse } from "@/api/client";
 import { Button, Card, ErrorState, Icon, Kpi, PageHeader, PageSkeleton, Section, StatusChip } from "@/components/common";
 import { useApi } from "@/hooks/useApi";
 
-// SCREEN 13 · 기록·분석 — 쌓인 결정 기록으로 운영 품질을 보고, 실패 패턴을 정책·시스템 개선으로 연결한다.
+// SCREEN 11 · 기록·분석 — 쌓인 결정 기록으로 운영 품질을 보고, 실패 패턴을 정책·시스템 개선으로 연결한다.
 // 집계 숫자는 화면 설계용 예시(is_example)일 때 반드시 "예시 데이터 · 측정값 아님"을 붙인다.
 const FILTERS = {
   scenario: ["전체", "열 위험", "승인 지연", "용량 부족", "정비 일정"],

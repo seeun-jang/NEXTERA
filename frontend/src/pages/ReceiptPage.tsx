@@ -5,7 +5,7 @@ import { ROLE_LABEL } from "@/api/role";
 import { Button, Card, ErrorState, Icon, PageHeader, PageSkeleton, PolicyTag, ProviderChip, ResultMark, Section, StatusChip } from "@/components/common";
 import { useApi } from "@/hooks/useApi";
 
-// SCREEN 12 · 결정 영수증 — 한 번의 결정에 대한 조건·후보·검사·승인·실행을 감사 가능한 기록으로 보여 준다.
+// SCREEN 10 · 결정 영수증 — 한 번의 결정에 대한 조건·후보·검사·승인·실행을 감사 가능한 기록으로 보여 준다.
 // 원래 AI 제안은 덮어쓰지 않고, 사람의 수정·차단·권한 거부는 별도 이벤트로 남는다.
 const STATUS = { open: "진행 중", executed: "실행 완료 · 시뮬레이션", held: "보류", failed: "실패" } as const;
 const APPROVAL_STATUS = { pending: "검토 중", approved: "승인", changes_requested: "수정 요청", rejected: "거부", escalated: "이관", expired: "만료" } as const;
@@ -69,7 +69,6 @@ export default function ReceiptPage() {
     );
 
   const labelOf = (aid: string) => rc.candidates.find((c) => c.id === aid)?.label ?? aid;
-  const branch = rc.branches.find((b) => b.branch_id !== "S0");
   const shownCands = rc.candidates;
 
   return (
@@ -215,11 +214,9 @@ export default function ReceiptPage() {
           <Button variant="secondary" onClick={() => navigate("/")}>
             처음부터 다시 시연
           </Button>
-          {branch && (
-            <Button variant="secondary" onClick={() => navigate(`/lab/${branch.branch_id}/compare`)}>
-              실험 결과 다시 비교
-            </Button>
-          )}
+          <Button variant="secondary" onClick={() => navigate("/scenario")}>
+            다른 상황으로 다시 보기
+          </Button>
           <Button arrow onClick={() => navigate("/analytics")}>
             기록 상세 보기
           </Button>

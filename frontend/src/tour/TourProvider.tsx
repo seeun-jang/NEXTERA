@@ -1,6 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { runScript, type TourApi } from "./script";
+import { runScriptFull } from "./scriptFull";
+
+/** short = 발표용 2분 · full = 제출용 긴 버전 */
+export type TourMode = "short" | "full";
 
 // 자동 시연(광고) 모드. 실제 화면을 그대로 조작하면서 스포트라이트 · 커서 · 자막 · 챕터 카드를 얹는다.
 // 녹화용이라 사람이 중간에 클릭하지 못하게 막고, ESC로만 멈춘다.
@@ -24,11 +28,11 @@ export interface Chapter {
   numbered?: boolean;
 }
 
-export const STAGES = ["상황", "판단", "판단 실험", "통제된 실행", "결정 영수증"];
+export const STAGES = ["상황 설정", "상황 파악", "판단", "통제된 실행", "결정 영수증"];
 
 interface Ctx {
   running: boolean;
-  start: () => void;
+  start: (mode?: TourMode) => void;
   stop: () => void;
 }
 const TourCtx = createContext<Ctx>({ running: false, start: () => {}, stop: () => {} });
@@ -74,7 +78,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [stop]);
 
-  const start = useCallback(() => {
+  const start = useCallback((mode: TourMode = "short") => {
     if (abort.current) return;
     const ac = new AbortController();
     abort.current = ac;
@@ -184,7 +188,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
       exists: (sel, text) => !!find(sel, text),
     };
 
-    runScript(api)
+    (mode === "full" ? runScriptFull : runScript)(api)
       .catch((e) => {
         if (!(e instanceof Aborted)) console.error(e);
       })

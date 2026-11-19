@@ -468,7 +468,7 @@ export const mockApi: NexteraApi = {
     await sleep(500);
     const s = snap(req.snapshot_id);
     const estimates = req.action_ids.map((id) => estimateFor(id, eff(), deadlineOf(s)));
-    log({ at: now(1), actor: "simulator", type: "futures_simulated", summary: `병렬 미래 ${req.action_ids.length}안 시뮬레이션 (${req.horizon_ticks ?? HORIZON_TICKS}틱)`, ref_id: req.snapshot_id });
+    log({ at: now(1), actor: "simulator", type: "futures_simulated", summary: `대안별 결과 ${req.action_ids.length}안 시뮬레이션 (${req.horizon_ticks ?? HORIZON_TICKS}틱)`, ref_id: req.snapshot_id });
     return { estimates };
   },
 

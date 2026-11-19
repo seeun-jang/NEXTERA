@@ -21,14 +21,14 @@ export interface TourApi {
   stage(i: number): void;
 }
 
-const ch = (i: number, sub: string): Chapter => ({
+export const ch = (i: number, sub: string): Chapter => ({
   no: String(i + 1).padStart(2, "0"),
   title: STAGES[i],
   sub,
   flow: { steps: STAGES, active: i },
 });
 
-const BTN = "button";
+export const BTN = "button";
 
 export async function runScript(t: TourApi) {
   // 2분 버전 — 장면마다 자막 하나, 화면 전환은 클릭으로만. 시간(ms)을 늘리면 영상 길이가 그대로 늘어난다.
@@ -42,31 +42,34 @@ export async function runScript(t: TourApi) {
       title: "기존 모니터링 위에 얹는 의사결정 · 검증 계층",
       sub: "회사가 규칙을 정하고, AI가 고르고, 사람이 실행을 통제합니다",
       kind: "flow",
-      flow: { steps: ["상황 설정", "기업 정책", "Zoro-1 판단", "조건 실험", "독립 안전 검사", "권한자 승인", "가상 실행", "결정 영수증"], animate: true },
+      flow: { steps: ["상황 설정", "기업 정책", "Zoro-1 판단", "대안별 결과", "독립 안전 검사", "권한자 승인", "가상 실행", "결정 영수증"], animate: true },
     },
     3600,
   );
   await t.click(BTN, "지금 체험하기", { moveMs: 500, afterMs: 700 });
 
-  // ---------- 01 상황 설정 ----------
+  // ---------- 1 상황 설정: 처음에 상황과 조건을 정한다 ----------
   await t.waitFor(".nx-scn-pick strong", undefined, 15000);
   t.hideCursor();
-  await t.chapter(ch(0, "상황을 직접 정하고 시작한다"), 1300);
+  await t.chapter(ch(0, "처음에 상황과 조건을 정한다"), 1300);
   t.stage(0);
-  await t.spot(".nx-scn-presets", { tag: "상황 설정", title: "시연할 상황을 직접 고릅니다", sub: "마감 · 옮길 자리 · 냉각 여유 · 우선순위 · 운영 목표" }, 2200);
+  await t.spot(".nx-scn-presets", { tag: "상황 설정", title: "시연할 상황을 직접 고릅니다", sub: "마감 · 옮길 자리 · 냉각 여유 · 우선순위 · 운영 목표 · 승인 지연" }, 2400);
   t.unspot();
   await t.click(".nx-scn-preset", "옮길 자리가 없는 날", { moveMs: 500, afterMs: 1700 });
   t.hideCursor();
   const altPick = await t.text(".nx-scn-pick strong");
-  await t.spot(".nx-scn-result", { tag: "상황 설정", title: "상황이 바뀌면 AI의 대안도 바뀝니다", sub: `N2가 꽉 찬 날 → ${altPick}` }, 2400);
+  const basePick = t.exists(".nx-scn-base strong") ? await t.text(".nx-scn-base strong") : "";
+  await t.spot(".nx-scn-result", { tag: "상황 설정", title: "상황이 바뀌면 AI의 대안도 바뀝니다", sub: basePick ? `기본 상황: ${basePick} → N2가 꽉 찬 날: ${altPick}` : `N2가 꽉 찬 날 → ${altPick}` }, 3000);
   t.unspot();
   await t.click(".nx-scn-preset", "기본 상황", { moveMs: 500, afterMs: 900 });
-  t.caption({ tag: "상황 설정", title: "이번 시연은 기본 상황으로 따라갑니다" });
+  t.caption({ tag: "상황 설정", title: "이번 시연은 기본 상황으로 끝까지 따라갑니다", sub: "이후 화면은 모두 이 설정의 결과입니다" });
   await t.click(BTN, "이 상황으로 시작", { moveMs: 600, afterMs: 700 });
 
-  // ---------- 02 운영 현황 ----------
+  // ---------- 2 상황 파악 ----------
   await t.waitFor(".nx-incident");
   t.hideCursor();
+  await t.chapter(ch(1, "무엇이 문제인가"), 1200);
+  t.stage(1);
   await t.spot(".nx-incident", { tag: "운영 현황", title: "과열된 N4 위에서 마감 5분 남은 작업이 돌고 있습니다", sub: "식히면 에너지, 옮기면 재시작 지연, 미루면 마감 위반" }, 3000);
   t.unspot();
   await t.click(BTN, "사건 상세 보기", { moveMs: 500, afterMs: 700 });
@@ -78,11 +81,11 @@ export async function runScript(t: TourApi) {
   t.unspot();
   await t.click(BTN, "회사 운영 정책 확인", { moveMs: 500, afterMs: 700 });
 
-  // ---------- 02 판단 ----------
+  // ---------- 3 판단 ----------
   await t.waitFor(".nx-funnel");
   t.hideCursor();
-  await t.chapter(ch(1, "회사 규칙 안에서 AI가 고른다"), 1200);
-  t.stage(1);
+  await t.chapter(ch(2, "회사 규칙 안에서 AI가 고른다"), 1200);
+  t.stage(2);
   await t.spot(".nx-funnel", { tag: "운영 정책", title: "규칙을 어기는 후보는 AI에게 전달조차 되지 않습니다", sub: "후보 7개 → AI 판단 대상 5개" }, 2600);
   t.unspot();
   await t.click(BTN, "정책 적용 후 AI 판단", { moveMs: 500, afterMs: 900 });
@@ -94,26 +97,14 @@ export async function runScript(t: TourApi) {
   const pick = await t.text(".nx-verdict-main strong");
   await t.spot(".nx-verdict", { tag: "의사결정 센터", title: `AI의 선택: ${pick}`, sub: live ? "Zoro-1 응답 · 아직 실행 전" : "MOCK 응답 · 아직 실행 전" }, 2300);
   t.unspot();
+  await t.click(BTN, "대안별 결과 보기", { moveMs: 500, afterMs: 900 });
 
-  // ---------- 03 판단 실험 ----------
-  await t.chapter(ch(2, "조건 하나만 바꿔 다시 묻는다"), 1200);
-  t.stage(2);
-  await t.click(BTN, "조건 변경 실험", { moveMs: 500, afterMs: 700 });
-  await t.waitFor(".nx-condtable");
-  await t.click(BTN, "마감 3분으로", { moveMs: 500, afterMs: 400 });
+  await t.waitFor(".nx-futures", undefined, 20000);
   t.hideCursor();
-  await t.spot(".nx-condtable tr.changed", { tag: "조건 실험", title: "마감만 5분 → 3분으로 바꿔 봅니다", sub: "설정한 상황은 그대로 · '가정'으로 기록" }, 2000);
-  t.unspot();
-  await t.click(BTN, "변경 조건으로 재판단", { moveMs: 500, afterMs: 900 });
-
-  await t.waitFor(".nx-abgrid", undefined, 30000);
-  t.hideCursor();
-  await t.spot(".nx-abgrid", { tag: "A/B 비교", title: "같은 상황, 다른 마감 → 다른 판단", sub: "후보 생성 · 정책 검사 · 판단을 다시 실행한 결과" }, 2800);
-  const why = await t.text(".nx-why");
-  await t.spot(".nx-why", { tag: "A/B 비교", title: "판단이 바뀐 이유까지 보여 줍니다", sub: why.length > 80 ? `${why.slice(0, 78)}…` : why }, 2800);
+  await t.spot(".nx-futures", { tag: "대안별 결과", title: "행동마다 5분 뒤를 나란히 비교합니다", sub: "온도 · 마감 · 냉각 에너지 · 위험을 같은 기준으로" }, 3000);
   t.unspot();
 
-  // ---------- 04 통제된 실행 ----------
+  // ---------- 4 통제된 실행 ----------
   await t.chapter(ch(3, "AI가 골라도, 바로 실행되지 않는다"), 1200);
   t.stage(3);
   await t.click(BTN, "실행 전 안전 검사", { moveMs: 500, afterMs: 800 });
@@ -149,7 +140,7 @@ export async function runScript(t: TourApi) {
   await t.spot(".nx-kpis--3", { tag: "실행 및 결과", title: "가상 환경에서만 실행하고 전후를 비교합니다", sub: "실제 설비 제어 없음 · 모든 수치는 시뮬레이션" }, 2500);
   t.unspot();
 
-  // ---------- 05 결정 영수증 ----------
+  // ---------- 5 결정 영수증 ----------
   await t.chapter(ch(4, "판단부터 결과까지, 하나의 기록으로"), 1200);
   t.stage(4);
   await t.click(BTN, "결정 영수증 확인", { moveMs: 500, afterMs: 800 });

@@ -8,7 +8,7 @@ import { useAction, useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
 import { recallValidation, rememberValidation } from "@/state/decisionCache";
 
-// SCREEN 09 · 안전 검사 (Safety Gate) — AI가 고른 행동이나 운영자가 요청한 행동이 회사 정책상 허용되는지 독립 코드로 검사한다.
+// SCREEN 07 · 안전 검사 (Safety Gate) — AI가 고른 행동이나 운영자가 요청한 행동이 회사 정책상 허용되는지 독립 코드로 검사한다.
 // 오른쪽 테스트는 정책 단계에서 이미 제외된 행동을 일부러 넣는 것이다. AI 후보가 아니다.
 
 
@@ -233,7 +233,7 @@ export default function ValidatePage() {
 
         <div className="nx-actions">
           <Button variant="secondary" onClick={() => navigate(`/decision/${id}/futures`)}>
-            허용된 대안 검토
+            대안별 결과 다시 보기
           </Button>
           {isHandoff(action) ? (
             <Button arrow onClick={() => navigate(`/decision/${id}/handoff`)}>

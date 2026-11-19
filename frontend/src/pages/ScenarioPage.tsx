@@ -19,11 +19,12 @@ import {
   type ScenarioValues,
 } from "@/state/scenario";
 
-// SCREEN 01 · 상황 설정 — 정해진 한 장면이 아니라, 시연할 상황을 고르거나 직접 조정한다.
-// 값을 바꿀 때마다 시연을 그 상황으로 초기화하고 AI 판단을 다시 돌려 오른쪽에 미리 보여 준다.
-// "이 상황으로 시작"을 누르면 같은 상황으로 깨끗하게 초기화한 뒤 02 운영 현황부터 흐름을 따라간다.
+// SCREEN 01 · 상황 설정 — 흐름의 맨 앞에서 상황과 조건을 모두 정한다 (예전 "조건 실험"을 여기로 합침).
+// 값을 바꿀 때마다 시연을 그 상황으로 초기화하고 AI 판단을 다시 돌려, 기본 상황의 판단과 나란히 보여 준다.
+// "이 상황으로 시작"을 누르면 같은 상황으로 깨끗하게 초기화한 뒤 02 운영 현황부터 결과를 따라간다.
 
 interface Preview {
+  basePick: string;
   pick: string;
   pickId: string;
   handoff: boolean;
@@ -36,6 +37,9 @@ interface Preview {
 }
 
 type Opt<T> = { v: T; label: string };
+
+/** 기본 상황의 AI 선택 — 기본값이 바뀌지 않으므로 한 번만 계산한다 */
+let basePickCache: string | null = null;
 const ROWS: { key: keyof ScenarioValues; label: string; hint: string; opts: Opt<number | string>[] }[] = [
   { key: "n4_temp_c", label: "N4 현재 온도", hint: "팬 이상 노드 · 안전 한계 88°C", opts: [78, 81, 84, 86].map((v) => ({ v, label: `${v}°C` })) },
   { key: "deadline_min", label: "J07 마감까지", hint: "남은 시간이 짧을수록 고를 수 있는 행동이 줄어듦", opts: [2, 3, 5, 8].map((v) => ({ v, label: `${v}분` })) },
@@ -65,12 +69,19 @@ export default function ScenarioPage() {
     setBusy(true);
     const timer = window.setTimeout(async () => {
       try {
+        const decideOnce = () => api.decide({ incident_id: incidentId, snapshot_id: "S0", policy_version: "1.2" });
+        if (basePickCache === null) {
+          await api.resetDemo({});
+          const b = await decideOnce();
+          basePickCache = b.candidates.find((c) => c.id === b.decision.selected_id)?.label ?? b.decision.selected_id;
+        }
         await api.resetDemo(changes);
-        const res = await api.decide({ incident_id: incidentId, snapshot_id: "S0", policy_version: "1.2" });
+        const res = await decideOnce();
         const inc = await api.getIncident(incidentId);
         if (my !== seq.current) return;
         const sel = res.candidates.find((c) => c.id === res.decision.selected_id);
         setPreview({
+          basePick: basePickCache,
           pick: sel?.label ?? res.decision.selected_id,
           pickId: res.decision.selected_id,
           handoff: isHandoff(sel),
@@ -110,7 +121,7 @@ export default function ScenarioPage() {
 
   const header = (
     <PageHeader
-      crumbs={["시연 준비", "상황 설정"]}
+      crumbs={["상황 설정"]}
       title="상황 설정 · Scenario"
       right={
         <>
@@ -134,7 +145,7 @@ export default function ScenarioPage() {
           </div>
         )}
 
-        <Section title="어떤 상황을 시연할까요" desc="상황을 고르면 오른쪽에서 AI가 어떤 대안을 고르는지 바로 보여 줍니다.">
+        <Section title="어떤 상황을 시연할까요" desc="처음에 상황과 조건을 정하면, 이후 화면은 모두 이 설정의 결과를 보여 줍니다.">
           <div className="nx-scn-presets">
             {PRESETS.map((p) => {
               const on = preset?.id === p.id;
@@ -213,6 +224,15 @@ export default function ScenarioPage() {
                   </div>
                   <p className="nx-scn-why">{preview.rationale}</p>
                   <dl className="nx-scn-facts">
+                    {Object.keys(changes).length > 0 && (
+                      <div>
+                        <dt>기본 상황이었다면</dt>
+                        <dd className="nx-scn-base">
+                          <strong>{preview.basePick}</strong>
+                          <span className={preview.basePick === preview.pick ? "same" : "diff"}>{preview.basePick === preview.pick ? "같은 선택" : "판단이 달라짐"}</span>
+                        </dd>
+                      </div>
+                    )}
                     <div>
                       <dt>정책 통과</dt>
                       <dd>

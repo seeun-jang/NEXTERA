@@ -175,14 +175,15 @@ export default function DecisionPage() {
           <Button variant="secondary" onClick={() => run.run()} disabled={run.pending}>
             {run.pending ? "판단 중…" : d ? "같은 입력으로 다시 판단" : "AI 판단 실행"}
           </Button>
-          {d && isHandoff(selected) && (
-            <Button variant="secondary" onClick={() => navigate(`/decision/${d.decision_id}/handoff`)}>
+          {d && isHandoff(selected) ? (
+            <Button arrow onClick={() => navigate(`/decision/${d.decision_id}/handoff`)}>
               사람에게 넘김 보기
             </Button>
+          ) : (
+            <Button arrow onClick={() => d && navigate(`/decision/${d.decision_id}/futures`)} disabled={!d}>
+              대안별 결과 보기
+            </Button>
           )}
-          <Button arrow onClick={() => navigate("/lab/S0")} disabled={!d}>
-            조건 변경 실험
-          </Button>
         </div>
       </div>
     </>

@@ -5,7 +5,7 @@ import { Button, Card, CheckRow, EmptyState, ErrorState, Icon, Kpi, PageHeader, 
 import { useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
 
-// SCREEN 11 · 실행 및 결과 — 승인된 행동을 시뮬레이터에서 실행하고 전·후를 비교한다. 실제 설비를 제어하지 않는다.
+// SCREEN 09 · 실행 및 결과 — 승인된 행동을 시뮬레이터에서 실행하고 전·후를 비교한다. 실제 설비를 제어하지 않는다.
 // 계약에 실행 조회 GET이 없어 결정 영수증(GET /api/receipts/:id)의 execution을 읽는다.
 
 interface Row {

@@ -17,17 +17,16 @@ interface NavItem {
 
 export function AppShell() {
   const { pathname } = useLocation();
-  const { incidentId, decisionId, branchId, approvalId, role, setRole } = useDemo();
+  const { incidentId, decisionId, approvalId, role, setRole } = useDemo();
   const [scn, setScn] = useState(loadScenario);
   useEffect(() => onScenarioChange(() => setScn(loadScenario())), []);
 
-  // 메뉴 ↔ 화면: §8 (운영 현황 02·03 · 운영 정책 04 · 의사결정 05·08·09 · 조건 실험 06·07 · 협업·승인 10·11 · 기록·분석 12·13)
+  // 메뉴 ↔ 화면: 상황 설정 01 · 운영 현황 02·03 · 운영 정책 04 · 의사결정 05·06·07 · 협업·승인 08·09 · 기록·분석 10·11
   const items: NavItem[] = [
     { label: "상황 설정", icon: "layers", to: "/scenario", match: ["/scenario"] },
     { label: "운영 현황", icon: "activity", to: "/operations", match: ["/operations", "/incidents"] },
     { label: "운영 정책", icon: "file", to: "/policies", match: ["/policies"] },
     { label: "의사결정", icon: "clock", to: `/decision/${decisionId ?? "DR-0412-01"}`, match: ["/decision"] },
-    { label: "조건 실험", icon: "flask", to: branchId ? `/lab/${branchId}/compare` : "/lab/S0", match: ["/lab"] },
     { label: "협업·승인", icon: "users", to: approvalId ? `/approvals/${approvalId}` : "/approvals", match: ["/approvals", "/executions"] },
     { label: "기록·분석", icon: "chart", to: decisionId ? `/receipts/${decisionId}` : "/analytics", match: ["/receipts", "/analytics"] },
   ];

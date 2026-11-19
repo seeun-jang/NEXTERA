@@ -8,7 +8,7 @@ import { Button, Card, EmptyState, ErrorState, Icon, PageHeader, PageSkeleton, P
 import { useAction, useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
 
-// SCREEN 10 · 협업·승인 — AI 제안을 권한 있는 사람이 검토·승인한다. 권한 없는 승인은 버튼 비활성 + 서버 거부(403) 두 겹.
+// SCREEN 08 · 협업·승인 — AI 제안을 권한 있는 사람이 검토·승인한다. 권한 없는 승인은 버튼 비활성 + 서버 거부(403) 두 겹.
 const STATUS_LABEL = {
   pending: "검토 중",
   approved: "승인됨",

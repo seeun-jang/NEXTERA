@@ -643,3 +643,8 @@
 .nx-side-scn:hover { border-color: rgba(255,255,255,.35); }
 
 @media (max-width: 1280px) { .nx-scn-presets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.nx-scn-base { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nx-scn-base span { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.nx-scn-base span.diff { background: var(--stage, var(--nx-ink)); color: #fff; }
+.nx-scn-base span.same { border: 1px solid var(--nx-border-strong); color: var(--nx-text-2); }

@@ -10,7 +10,7 @@ import { clearDecisions } from "@/state/decisionCache";
 import { DEFAULT_VALUES, saveScenario } from "@/state/scenario";
 import { useTour } from "@/tour/TourProvider";
 
-// SCREEN 01 · 메인 · 제품 진입 — 제품 UI 시안(레퍼런스) 구성을 따른다.
+// 메인(랜딩) · 제품 진입 — 제품 UI 시안(레퍼런스) 구성을 따른다.
 // 수치는 시드 S0(GET /api/state)에서 읽는다. 검증되지 않은 고객·파트너 로고는 넣지 않는다.
 
 const FLOW: { icon: IconName; title: string; sub: string }[] = [
@@ -23,7 +23,7 @@ const FLOW: { icon: IconName; title: string; sub: string }[] = [
 
 const PREVIEW_MENU: { icon: IconName; label: string; to: string }[] = [
   { icon: "grid", label: "운영 대시보드", to: "/operations" },
-  { icon: "layers", label: "의사결정 Lab", to: "/lab/S0" },
+  { icon: "layers", label: "상황 설정", to: "/scenario" },
   { icon: "users", label: "협업 · 승인", to: "/approvals" },
   { icon: "book", label: "운영 정책 · 매뉴얼", to: "/policies" },
   { icon: "chart", label: "결정 기록", to: "/analytics" },
@@ -59,10 +59,11 @@ export default function LandingPage() {
   });
   const sum = state.data ? summarize(state.data) : null;
   const tour = useTour();
-  // 녹화용: 주소에 ?tour=1을 붙이면 자동 시연이 바로 시작된다
+  // 녹화용: 주소에 ?tour=1(발표용 2분) 또는 ?tour=full(제출용 긴 버전)을 붙이면 자동 시연이 바로 시작된다
   useEffect(() => {
-    if (window.location.search.includes("tour=1") && !tour.running) {
-      const id = window.setTimeout(() => tour.start(), 900);
+    const q = new URLSearchParams(window.location.search).get("tour");
+    if ((q === "1" || q === "full") && !tour.running) {
+      const id = window.setTimeout(() => tour.start(q === "full" ? "full" : "short"), 900);
       return () => clearTimeout(id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -188,15 +189,15 @@ export default function LandingPage() {
           </p>
         </div>
         <div className="lp-feature-grid">
-          <Link to="/lab/S0" className="lp-feature lp-feature--blue">
+          <Link to="/scenario" className="lp-feature lp-feature--blue">
             <GlassPanels />
             <div className="lp-feature-body">
               <Icon name="layers" size={30} strokeWidth={1.5} />
-              <h3>의사결정 Lab</h3>
+              <h3>상황 설정</h3>
               <p>
-                운영 조건을 바꿔
+                상황과 조건을 직접 정하고
                 <br />
-                AI의 판단을 실험하고 비교합니다.
+                AI가 고르는 대안을 바로 봅니다.
               </p>
               <Icon name="arrow-right" size={20} />
             </div>
