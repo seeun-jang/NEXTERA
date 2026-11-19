@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Candidate, Validation } from "@contracts/types";
 import { api } from "@/api/client";
 import { Button, Card, CheckRow, ErrorState, Icon, PageHeader, PageSkeleton, Section, StatusChip } from "@/components/common";
+import { isHandoff } from "@/components/screens/labels";
 import { useAction, useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
 import { recallValidation, rememberValidation } from "@/state/decisionCache";
@@ -234,6 +235,11 @@ export default function ValidatePage() {
           <Button variant="secondary" onClick={() => navigate(`/decision/${id}/futures`)}>
             허용된 대안 검토
           </Button>
+          {isHandoff(action) ? (
+            <Button arrow onClick={() => navigate(`/decision/${id}/handoff`)}>
+              사람에게 넘김 보기
+            </Button>
+          ) : (
           <Button
             arrow
             disabled={!main || main.verdict === "blocked" || !main.approval_id}
@@ -242,6 +248,7 @@ export default function ValidatePage() {
           >
             담당자 승인 요청
           </Button>
+          )}
         </div>
       </div>
     </>

@@ -14,6 +14,7 @@ import ExecutionPage from "@/pages/ExecutionPage";
 import ReceiptPage from "@/pages/ReceiptPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import HandoffPage from "@/pages/HandoffPage";
+import ScenarioPage from "@/pages/ScenarioPage";
 
 // 라우트 = 스토리보드 SCREEN 01~13 (§8)
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/decision/:id/futures" element={<FuturesPage />} />
         <Route path="/decision/:id/validate" element={<ValidatePage />} />
         <Route path="/decision/:id/handoff" element={<HandoffPage />} />
+        <Route path="/scenario" element={<ScenarioPage />} />
         <Route path="/lab/:snapshot" element={<LabPage />} />
         <Route path="/lab/:branch/compare" element={<ComparePage />} />
         <Route path="/approvals" element={<ApprovalPage />} />

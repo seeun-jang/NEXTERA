@@ -30,7 +30,7 @@ const CONTENT: Record<HandoffType, { title: string; lead: string; to: RoleId[]; 
     to: ["operator", "cooling_A"],
     ask: "아래 정보가 확인되면 같은 조건으로 다시 판단합니다. 그전까지 설비는 그대로 둡니다.",
     listTitle: "요청한 정보",
-    list: ["N4 팬의 실제 상태와 교체 예정 시각", "J07 체크포인트 저장 시점 (옮기면 재시작 시간이 얼마나 드는지)", "N2의 여유 GPU 8장이 지금도 비어 있는지"],
+    list: ["N4 팬의 실제 상태와 교체 예정 시각", "J07 체크포인트 저장 시점 (옮기면 재시작 시간이 얼마나 드는지)", "N2 등 옮길 수 있는 노드에 여유 GPU가 있는지"],
     fallback: "입력 정보가 불확실해 바로 실행하지 않고 확인을 먼저 요청합니다.",
   },
 };

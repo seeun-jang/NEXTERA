@@ -215,7 +215,7 @@
 .nx-section-head > :not(:first-child) { flex: none; }
 .nx-section-title { font-size: 16px; font-weight: 700; color: var(--nx-ink); }
 .nx-section-desc { margin-top: 2px; font-size: 12.5px; color: var(--nx-text-2); }
-.nx-sent { display: inline-block; }
+.nx-sent { display: inline-block; margin-right: .3em; }
 .nx-content { gap: 22px; }
 .nx-split { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr); gap: 20px; align-items: stretch; }
 .nx-split-side { display: flex; flex-direction: column; }
@@ -603,3 +603,43 @@
 .nx-ticket-list ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .nx-ticket-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.5; color: var(--nx-ink); }
 .nx-ticket-box { flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 4px; border: 1.5px solid var(--nx-border-strong); background: var(--nx-surface); }
+
+/* ---------- 01 상황 설정 ---------- */
+.nx-scn-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.nx-scn-preset { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px 18px; text-align: left; border-radius: var(--nx-radius-inner); border: 1px solid var(--nx-border); background: var(--nx-surface); cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.nx-scn-preset:hover { border-color: var(--nx-border-strong); }
+.nx-scn-preset:focus-visible { outline: 2px solid var(--nx-accent); outline-offset: 2px; }
+.nx-scn-preset.on { border-color: var(--nx-ink); box-shadow: inset 0 0 0 1px var(--nx-ink); }
+.nx-scn-preset strong { font-size: 15px; color: var(--nx-ink); }
+.nx-scn-preset > span:not(.nx-scn-tags) { font-size: 13px; color: var(--nx-text-2); line-height: 1.5; }
+.nx-scn-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.nx-scn-tags em { font-style: normal; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--nx-accent-soft); color: var(--nx-accent); white-space: nowrap; }
+.nx-scn-preset.on .nx-scn-tags em { background: var(--nx-ink); color: #fff; }
+
+.nx-scn-table td:first-child { display: flex; flex-direction: column; gap: 2px; }
+.nx-scn-table tr.changed td { background: var(--nx-accent-soft); }
+.nx-scn-table tr.changed td:first-child { box-shadow: inset 3px 0 0 var(--nx-accent); }
+.nx-scn-table .nx-seg button { white-space: nowrap; }
+.nx-scn-reset { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--nx-border-strong); background: var(--nx-surface); color: var(--nx-ink); font-size: 13px; font-weight: 600; cursor: pointer; }
+.nx-scn-reset:hover:not(:disabled) { border-color: var(--nx-ink); }
+.nx-scn-reset:disabled { opacity: .4; cursor: default; }
+
+.nx-scn-result { display: flex; flex-direction: column; gap: 12px; transition: opacity .2s; }
+.nx-scn-result.busy { opacity: .55; }
+.nx-scn-pick { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: var(--nx-radius-inner); background: linear-gradient(135deg, var(--nx-night-2), var(--nx-night)); color: #fff; }
+.nx-scn-pick .caption { color: #9fb4d3; }
+.nx-scn-pick strong { font-size: 20px; }
+.nx-scn-flag { align-self: flex-start; margin-top: 4px; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #fff; color: var(--nx-ink); }
+.nx-scn-why { font-size: 13.5px; line-height: 1.6; color: var(--nx-ink); }
+.nx-scn-facts { margin: 0; display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--nx-border); }
+.nx-scn-facts div { display: flex; flex-direction: column; gap: 2px; }
+.nx-scn-facts dt { font-size: 12px; color: var(--nx-text-3); }
+.nx-scn-facts dd { margin: 0; font-size: 13.5px; color: var(--nx-ink); line-height: 1.5; }
+.nx-scn-summary { margin-right: auto; align-self: center; }
+
+.nx-side-scn { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); color: #fff; text-decoration: none; }
+.nx-side-scn .caption { color: #8ea3c2; font-size: 11px; }
+.nx-side-scn b { font-size: 13px; }
+.nx-side-scn:hover { border-color: rgba(255,255,255,.35); }
+
+@media (max-width: 1280px) { .nx-scn-presets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

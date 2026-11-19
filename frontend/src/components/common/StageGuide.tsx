@@ -23,6 +23,7 @@ interface Step {
 }
 
 export const STEPS: Step[] = [
+  { no: "01", title: "상황 설정", part: 0, desc: "시연할 상황을 고르거나 직접 조정합니다. 바꾼 값은 이후 모든 화면과 판단에 그대로 쓰입니다.", next: "02 운영 현황", match: (p) => p.startsWith("/scenario") },
   { no: "02", title: "운영 현황", part: 0, desc: "클러스터 상태를 보고 조치가 필요한 사건을 찾습니다.", next: "03 사건 상세", match: (p) => p.startsWith("/operations") },
   { no: "03", title: "사건 상세", part: 0, desc: "AI를 부르기 전에 무엇이 문제이고 어떤 제약이 걸렸는지 확인합니다.", next: "04 운영 정책", match: (p) => p.startsWith("/incidents/") },
   { no: "04", title: "운영 정책", part: 1, desc: "회사 규칙이 AI가 고를 수 있는 행동의 범위를 정합니다.", next: "05 의사결정 센터", match: (p) => p.startsWith("/policies") },

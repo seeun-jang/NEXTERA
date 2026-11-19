@@ -23,7 +23,7 @@ export function Section({
             <p className="nx-section-desc">
               {/* 줄이 넘치면 문장 단위로 다음 줄로 넘긴다 */}
               {desc.split(/(?<=\.)\s+/).map((sent, i) => (
-                <span key={i} className="nx-sent">{sent}{" "}</span>
+                <span key={i} className="nx-sent">{sent}</span>
               ))}
             </p>
           )}

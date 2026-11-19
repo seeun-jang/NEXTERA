@@ -23,10 +23,15 @@ export interface AnalyticsResponse {
   patterns: { pattern: string; count: number; decision_id: string; action: string }[];
 }
 
+/** 01 상황 설정 값: 계약의 ExperimentChanges + 데모 전용 N4 현재 온도 */
+export type ScenarioChanges = import("@contracts/types").ExperimentChanges & { n4_temp_c?: number };
+
 /** §5 API 계약의 프론트 쪽 시그니처. mock과 live가 똑같이 구현한다. */
 export interface NexteraApi {
   health(): Promise<HealthResponse>;
-  resetDemo(): Promise<{ snapshot_id: string }>;
+  /** 시연 초기화. scenario를 주면 01 상황 설정 값을 S0에 반영해 시작한다.
+   *  (mock은 지원. live는 서버가 body.scenario를 받아야 반영된다 — 대환 서버 확인 필요) */
+  resetDemo(scenario?: ScenarioChanges): Promise<{ snapshot_id: string }>;
   getState(snapshotId?: string): Promise<Snapshot>;
   getIncident(id: string): Promise<Incident>;
   getPolicies(version?: string): Promise<PoliciesResponse>;

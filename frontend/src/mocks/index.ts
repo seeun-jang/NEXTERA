@@ -10,7 +10,7 @@ import rolesSeed from "@seed/roles.json";
 import { ApiClientError } from "@/api/errors";
 import { getClientRole } from "@/api/role";
 import type { AnalyticsResponse, NexteraApi } from "@/api/types";
-import { buildCandidates, estimateFor, HORIZON_TICKS, mockChoose } from "./data";
+import { BASE_N4_TEMP, buildCandidates, estimateFor, HORIZON_TICKS, mockChoose, type SimChanges } from "./data";
 
 const POLICY_VERSION = "1.2";
 const INCIDENT_ID = "INC-0412";
@@ -36,6 +36,8 @@ export const addMinutes = (t: string, min: number) => toTime(toSec(t) + min * 60
 
 // ---------- 메모리 상태 ----------
 interface Store {
+  /** 01 상황 설정에서 고른 값. S0 스냅샷에 이미 반영돼 있고, 추정 계산에도 함께 넘긴다. */
+  scenario: SimChanges;
   clock: number; // 초
   snapshots: Map<string, Snapshot>;
   decisions: Map<string, Decision>; // key = branch_id
@@ -56,12 +58,44 @@ const seedSnapshot = snapshotSeed as unknown as Snapshot;
 const policies = (policySeed as unknown as { policies: Policy[] }).policies;
 const roles = rolesSeed as unknown as Role[];
 
-let S: Store = fresh();
+/** 새로고침해도 고른 상황이 유지되도록 화면(state/scenario.ts)과 같은 키를 읽는다. */
+export const SCENARIO_KEY = "nx-scenario";
+function savedScenario(): SimChanges {
+  try {
+    const raw = sessionStorage.getItem(SCENARIO_KEY);
+    return raw ? (JSON.parse(raw).changes ?? {}) : {};
+  } catch {
+    return {};
+  }
+}
 
-function fresh(): Store {
+/** 상황 값을 S0 스냅샷에 반영한다 (화면에 보이는 값과 판단에 쓰는 값이 같도록). */
+function applyScenario(base: Snapshot, sc: SimChanges): Snapshot {
+  const b = clone(base);
+  const j07 = b.jobs.find((j) => j.id === "J07")!;
+  if (sc.deadline_min !== undefined) {
+    j07.deadline_min = sc.deadline_min;
+    j07.deadline_at = addMinutes(b.sim_time, sc.deadline_min);
+  }
+  if (sc.j07_priority) j07.priority = sc.j07_priority;
+  if (sc.n2_gpus_free !== undefined) b.nodes.find((n) => n.id === "N2")!.gpus_free = sc.n2_gpus_free;
+  if (sc.cooling_max !== undefined) b.zones.find((z) => z.id === "Z2")!.cooling_max = sc.cooling_max;
+  if (sc.n4_temp_c !== undefined) {
+    const off = sc.n4_temp_c - BASE_N4_TEMP;
+    b.nodes.find((n) => n.id === "N4")!.temp_c = sc.n4_temp_c;
+    const h = b.history.find((x) => x.node_id === "N4");
+    if (h) h.points = h.points.map((p) => ({ ...p, temp_c: Math.round((p.temp_c + off) * 10) / 10 }));
+  }
+  return b;
+}
+
+let S: Store = fresh(savedScenario());
+
+function fresh(scenario: SimChanges = {}): Store {
   const st: Store = {
+    scenario: clone(scenario),
     clock: toSec(seedSnapshot.sim_time),
-    snapshots: new Map([["S0", clone(seedSnapshot)]]),
+    snapshots: new Map([["S0", applyScenario(seedSnapshot, scenario)]]),
     decisions: new Map(),
     experiments: new Map(),
     candidates: new Map(),
@@ -87,12 +121,29 @@ function log(e: Omit<ReceiptEvent, "seq">) {
   S.events.push({ ...e, seq: ++S.seq });
 }
 
+const SC_LABEL: Record<string, (v: unknown) => string> = {
+  n4_temp_c: (v) => `N4 ${v}°C`,
+  deadline_min: (v) => `J07 마감 ${v}분`,
+  j07_priority: (v) => `J07 ${v}`,
+  n2_gpus_free: (v) => `N2 여유 GPU ${v}장`,
+  cooling_max: (v) => `Z2 냉각 상한 ${v}`,
+  objective: (v) => (v === "energy" ? "에너지 우선" : v === "performance" ? "성능 우선" : "균형"),
+  approval_delay_min: (v) => `승인 지연 ${v}분`,
+};
+function describeScenario(sc: SimChanges): string {
+  return Object.entries(sc).map(([k, v]) => SC_LABEL[k]?.(v) ?? `${k}=${v}`).join(" · ");
+}
+
 function initEvents() {
   log({ at: toTime(S.clock), actor: "system", type: "incident_detected", summary: "사건 감지 INC-0412 · N4 열 위험·팬 교체 메모", ref_id: INCIDENT_ID });
+  const sc = describeScenario(S.scenario);
+  if (sc) log({ at: toTime(S.clock), actor: "operator", type: "severity_changed", summary: `시연 상황 설정 · ${sc}`, ref_id: INCIDENT_ID, is_assumption: true });
   log({ at: now(2), actor: "operator", type: "severity_changed", summary: "심각도 수정 보통 → 높음", ref_id: INCIDENT_ID });
 }
 initEvents();
 
+/** 상황 값 위에 실험 변경을 덮어쓴 값 */
+const eff = (c: ExperimentChanges = {}): SimChanges => ({ ...S.scenario, ...c });
 const snap = (id: string) => S.snapshots.get(id) ?? fail(404, "NOT_FOUND", `스냅샷 ${id}가 없습니다.`);
 const deadlineOf = (s: Snapshot) => s.jobs.find((j) => j.id === "J07")?.deadline_min ?? 5;
 
@@ -110,7 +161,7 @@ function runDecision(branchId: string, changes: ExperimentChanges = {}): { decis
   const cands = buildCandidates(s, changes);
   const passed = cands.filter((c) => !c.filtered_out).length;
   log({ at: now(1), actor: "system", type: "policy_applied", summary: `정책 v${POLICY_VERSION} 적용 · 후보 ${cands.length} → ${passed}`, ref_id: branchId });
-  const choice = mockChoose(cands, changes, deadlineOf(s));
+  const choice = mockChoose(cands, eff(changes), deadlineOf(s));
   const decision: Decision = {
     decision_id: DECISION_ID,
     incident_id: INCIDENT_ID,
@@ -145,7 +196,7 @@ function baseExperiment(): Experiment {
   const d = S.decisions.get("S0")!;
   return {
     branch_id: "S0", base_snapshot_id: "S0", changes: {},
-    candidates: S.candidates.get("S0")!, decision: d, estimate: estimateFor(d.selected_id, {}, deadlineOf(snap("S0"))),
+    candidates: S.candidates.get("S0")!, decision: d, estimate: estimateFor(d.selected_id, eff(), deadlineOf(snap("S0"))),
   };
 }
 
@@ -153,7 +204,7 @@ function baseExperiment(): Experiment {
 function runChecks(action: Candidate, branchId: string): Check[] {
   const s = snap(branchId);
   const checks: Check[] = [];
-  const est = estimateFor(action.id, {}, deadlineOf(s));
+  const est = estimateFor(action.id, eff(), deadlineOf(s));
   if (action.type === "job_migrate") {
     const to = String(action.params.to);
     const free = s.nodes.find((n) => n.id === to)?.gpus_free ?? 0;
@@ -245,7 +296,7 @@ function doExecute(action: Candidate, approvalId: string | null, key: string): E
     ...(approvalId ? [{ policy_id: APPROVAL_POLICY[action.type] ?? "-", name: "권한", criterion: "승인자 역할 일치", observed: "승인됨", result: "pass" as const }] : []),
   ];
   log({ at: t0, actor: "system", type: "rechecked", summary: "실행 직전 재검사 통과", ref_id: approvalId ?? action.id });
-  const finish = estimateFor(action.id, {}, deadlineOf(before)).job_finish_min.J07;
+  const finish = estimateFor(action.id, eff(), deadlineOf(before)).job_finish_min.J07;
   const deadlineAt = before.jobs.find((j) => j.id === "J07")?.deadline_at ?? "14:05:00";
   const finishAt = addMinutes(before.sim_time, finish);
   const steps =
@@ -326,9 +377,9 @@ export const mockApi: NexteraApi = {
     return { status: "ok", contract_version: "1.0.0", provider_mode: "mock", zoro1_reachable: false };
   },
 
-  async resetDemo() {
+  async resetDemo(scenario?: SimChanges) {
     await sleep(LATENCY_MS);
-    S = fresh();
+    S = fresh(scenario ?? {});
     initEvents();
     return { snapshot_id: "S0" };
   },
@@ -345,14 +396,14 @@ export const mockApi: NexteraApi = {
     const incident: Incident = {
       id: INCIDENT_ID,
       severity: "high",
-      title: "N4 열 위험 · P1 작업 J07 실행 중",
+      title: `N4 열 위험 · ${snap("S0").jobs.find((j) => j.id === "J07")!.priority} 작업 J07 실행 중`,
       node_ids: ["N4"],
       job_ids: ["J07"],
       detected_at: "14:00:00",
       status: exec ? "executed" : S.approvals.size ? "awaiting_approval" : "needs_decision",
       policy_refs: ["POL-01", "POL-02", "POL-03", "POL-04", "POL-05"],
       snapshot_id: "S0",
-      no_action_forecast: estimateFor(null),
+      no_action_forecast: estimateFor(null, eff(), deadlineOf(snap("S0"))),
     };
     return incident;
   },
@@ -394,7 +445,7 @@ export const mockApi: NexteraApi = {
       changes: clone(req.changes),
       candidates,
       decision,
-      estimate: estimateFor(decision.selected_id, req.changes, deadlineOf(b)),
+      estimate: estimateFor(decision.selected_id, eff(req.changes), deadlineOf(b)),
     };
     S.experiments.set(branchId, exp);
     const desc = Object.entries(req.changes).map(([k, v]) => `${k}=${v}`).join(", ");
@@ -416,7 +467,7 @@ export const mockApi: NexteraApi = {
   async futures(req) {
     await sleep(500);
     const s = snap(req.snapshot_id);
-    const estimates = req.action_ids.map((id) => estimateFor(id, {}, deadlineOf(s)));
+    const estimates = req.action_ids.map((id) => estimateFor(id, eff(), deadlineOf(s)));
     log({ at: now(1), actor: "simulator", type: "futures_simulated", summary: `병렬 미래 ${req.action_ids.length}안 시뮬레이션 (${req.horizon_ticks ?? HORIZON_TICKS}틱)`, ref_id: req.snapshot_id });
     return { estimates };
   },

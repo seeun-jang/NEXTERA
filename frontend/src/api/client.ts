@@ -38,7 +38,7 @@ const enc = encodeURIComponent;
 
 const liveApi: NexteraApi = {
   health: () => http("GET", "/api/health"),
-  resetDemo: () => http("POST", "/api/demo/reset"),
+  resetDemo: (scenario) => http("POST", "/api/demo/reset", scenario && Object.keys(scenario).length ? { scenario } : undefined),
   getState: (snapshotId = "S0") => http("GET", `/api/state${q({ snapshot: snapshotId })}`),
   getIncident: (id) => http("GET", `/api/incidents/${enc(id)}`),
   getPolicies: (version = "1.2") => http("GET", `/api/policies${q({ version })}`),

@@ -4,6 +4,7 @@ import { api } from "@/api/client";
 import { Button, Card, ErrorState, Icon, PageHeader, PageSkeleton, ProviderChip, Section, StatusChip, TempChart } from "@/components/common";
 import { approvalLabel } from "@/components/screens/labels";
 import { useApi } from "@/hooks/useApi";
+import { fromChanges, loadScenario } from "@/state/scenario";
 import { futuresOnce } from "@/state/decisionCache";
 
 // SCREEN 08 · 병렬 미래 (Parallel Futures) — 같은 스냅샷 · 같은 마감 · 같은 시드에서 행동만 바꿔 5분 미래를 비교한다.
@@ -110,6 +111,7 @@ export default function FuturesPage() {
     );
 
   const { rc, actions, estimates, selected } = data;
+  const deadline = estimates[0] ? Math.round((estimates[0].job_finish_min.J07 + estimates[0].deadline_slack_min.J07) * 10) / 10 : 5;
   if (!actions.length)
     return (
       <>
@@ -128,7 +130,7 @@ export default function FuturesPage() {
       <div className="nx-content">
         <div className="nx-changed nx-changed--neutral">
           <span className="nx-changed-label">같은 조건</span>
-          <strong>시나리오 S0 · 마감 5분 · 같은 난수 시드 — 행동만 다르게</strong>
+          <strong>설정한 상황 S0 · 마감 {deadline}분 · 같은 난수 시드 — 행동만 다르게</strong>
           <span className="caption">조건을 바꾸는 실험은 06 조건 실험 · 07 A/B 비교에서 합니다</span>
         </div>
 
@@ -143,7 +145,7 @@ export default function FuturesPage() {
 
         <div className="nx-callout">
           <Icon name="info" size={16} />
-          모든 수치는 시뮬레이터 추정입니다. 0분 = {"14:00:00"}, 승인 지연 0.5분 가정. 작업 연기는 일을 미래로 넘긴 것이라 절감으로 오해하지 않도록 완료·잔여 작업량을 함께 봅니다.
+          모든 수치는 시뮬레이터 추정입니다. 0분 = {"14:00:00"}, 승인 지연 {fromChanges(loadScenario().changes).approval_delay_min}분 가정. 작업 연기는 일을 미래로 넘긴 것이라 절감으로 오해하지 않도록 완료·잔여 작업량을 함께 봅니다.
         </div>
 
         <div className="nx-actions">

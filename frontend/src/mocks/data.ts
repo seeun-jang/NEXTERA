@@ -3,6 +3,11 @@
 import type { Candidate, Estimate, ExperimentChanges, Snapshot } from "@contracts/types";
 
 export const HORIZON_TICKS = 10; // 5분
+
+/** 상황 설정(01) 값. 계약서의 ExperimentChanges에 데모 전용 N4 현재 온도를 더한 것 — mock 안에서만 쓴다. */
+export type SimChanges = ExperimentChanges & { n4_temp_c?: number };
+export const BASE_N4_TEMP = 81;
+export const THERMAL_LIMIT = 88;
 export const BASE_APPROVAL_DELAY_MIN = 0.5; // 승인 지연 추정(가정)
 
 type Pt = [number, number]; // [t_min, temp_c]
@@ -67,8 +72,11 @@ const PROFILES: Record<string, Profile> = {
 const BASE_COOLING_KWH = 0.42; // Z2 냉각 5분 (mock 예시)
 const IT_KWH = 2.1; // 25.2 kW × 5분
 
-export function estimateFor(actionId: string | null, changes: ExperimentChanges = {}, deadlineMin = 5): Estimate {
-  const p = (actionId && PROFILES[actionId]) || NO_ACTION;
+export function estimateFor(actionId: string | null, changes: SimChanges = {}, deadlineMin = 5): Estimate {
+  const base = (actionId && PROFILES[actionId]) || NO_ACTION;
+  // N4 현재 온도를 바꾸면 N4 예측 곡선 전체를 같은 만큼 올리거나 내린다 (단순 가정).
+  const off = (changes.n4_temp_c ?? BASE_N4_TEMP) - BASE_N4_TEMP;
+  const p: Profile = off ? { ...base, n4: base.n4.map(([t, v]) => [t, v + off] as Pt) } : base;
   const needsApproval = actionId === "A-COOL-Z2-UP" || actionId === "A-MIG-J07-N2" || actionId === "A-DEF-J08-30";
   const delay = changes.approval_delay_min ?? BASE_APPROVAL_DELAY_MIN;
   const finish = Math.round((p.j07Finish + (needsApproval ? delay - BASE_APPROVAL_DELAY_MIN : 0)) * 10) / 10;
@@ -91,11 +99,26 @@ export function estimateFor(actionId: string | null, changes: ExperimentChanges 
     throttle_min: p.throttleMin,
     completed_work: actionId === "A-DEF-J08-30" ? 32 : 40, // GPU·분, mock 예시
     remaining_work: actionId === "A-DEF-J08-30" ? 18 : 10,
-    risk: p.risk,
-    risk_note: p.riskNote,
+    risk: riskOf(p, peak.N4),
+    risk_note:
+      base === NO_ACTION
+        ? noActionNote(temp_series[0].points)
+        : peak.N4 > THERMAL_LIMIT
+          ? `N4 예측 최고 ${peak.N4}°C · 안전 한계 초과`
+          : p.riskNote,
     violations: [...p.violations, ...(finish > deadlineMin ? ["DEADLINE_MISS"] : [])],
     source: "sim_estimate",
   };
+}
+
+function riskOf(p: Profile, n4Peak: number): Estimate["risk"] {
+  if (n4Peak > THERMAL_LIMIT) return "high";
+  return p.risk;
+}
+
+function noActionNote(points: { t_min: number; temp_c: number }[]): string {
+  const hit = points.find((x) => x.temp_c >= THERMAL_LIMIT);
+  return hit ? `약 ${hit.t_min}분 뒤 안전 한계 ${THERMAL_LIMIT}°C 도달` : `5분 안에는 안전 한계 ${THERMAL_LIMIT}°C 아래`;
 }
 
 /** 스냅샷에서 후보 7개를 만들고 필수 정책(hard)으로 걸러낸다. 백엔드 core/candidates.py + policy.py의 mock 판. */
@@ -147,11 +170,23 @@ export function buildCandidates(snap: Snapshot, changes: ExperimentChanges = {})
 }
 
 /** mock 판단: 마감 안에 끝나는 행동 중 정책 v1.2 목표 순서(마감 → 에너지)로 고른다. 규칙 기준선과 같은 논리. */
-export function mockChoose(cands: Candidate[], changes: ExperimentChanges, deadlineMin: number): { id: string; rationale: string } {
+export function mockChoose(cands: Candidate[], changes: SimChanges, deadlineMin: number): { id: string; rationale: string } {
   const ok = cands.filter((c) => !c.filtered_out);
   const has = (id: string) => ok.some((c) => c.id === id);
-  const finish = (id: string) => estimateFor(id, changes, deadlineMin).job_finish_min.J07;
-  const fits = (id: string) => has(id) && finish(id) <= deadlineMin;
+  const est = (id: string) => estimateFor(id, changes, deadlineMin);
+  const finish = (id: string) => est(id).job_finish_min.J07;
+  const hot = (id: string) => Math.max(...Object.values(est(id).peak_temp_c)) > THERMAL_LIMIT;
+  const fits = (id: string) => has(id) && finish(id) <= deadlineMin && !hot(id);
+  const label = (id: string) => cands.find((c) => c.id === id)?.label ?? id;
+  /** 앞 순위 후보를 왜 못 골랐는지 한 줄로 */
+  const whyNot = (id: string): string | null => {
+    const c = cands.find((x) => x.id === id);
+    if (!c) return id === "A-COOL-Z2-UP" ? "냉각 강화(이미 상한)" : `${id}(후보 없음)`;
+    if (c.filtered_out) return `${label(id)}(${c.filter_reason} 차단)`;
+    if (finish(id) > deadlineMin) return `${label(id)}(마감 ${deadlineMin}분 초과)`;
+    if (hot(id)) return `${label(id)}(N4 ${THERMAL_LIMIT}°C 초과 예측)`;
+    return null;
+  };
 
   const RATIONALE: Record<string, string> = {
     "A-MIG-J07-N2": "운영자 메모의 N4 부하 자제 요청과 N2의 여유 GPU 8장을 근거로 이동을 선택했습니다.",
@@ -164,6 +199,14 @@ export function mockChoose(cands: Candidate[], changes: ExperimentChanges, deadl
       ? ["A-DEF-J08-30", "A-MIG-J07-N2", "A-COOL-Z2-UP"]
       : ["A-MIG-J07-N2", "A-COOL-Z2-UP", "A-DEF-J08-30"];
   const pick = order.find(fits);
-  if (pick) return { id: pick, rationale: RATIONALE[pick] };
-  return { id: "A-ESC", rationale: "마감과 열 한계를 함께 지키는 허용 후보가 없어 운영자에게 이관합니다." };
+  const before = (pick ? order.slice(0, order.indexOf(pick)) : order).map(whyNot).filter(Boolean);
+  const lead = before.length ? `쓸 수 없는 행동: ${before.join(", ")}. ` : "";
+  if (pick) {
+    const base =
+      pick === "A-COOL-Z2-UP" && before.length
+        ? "마감 안에 끝나는 냉각 강화를 선택했습니다. N4 팬 이상은 주의로 남깁니다."
+        : RATIONALE[pick];
+    return { id: pick, rationale: `${lead}${base}` };
+  }
+  return { id: "A-ESC", rationale: `${lead}마감과 열 한계를 함께 지키는 허용 후보가 없어 운영자에게 이관합니다.` };
 }

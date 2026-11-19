@@ -121,7 +121,7 @@ export default function ReceiptPage() {
                                 {keys.map(([k, v]) => `${k === "deadline_min" ? "마감" : k} ${v}${k === "deadline_min" ? "분" : ""}`).join(", ")} <StatusChip variant="assumption" />
                               </>
                             ) : (
-                              "실제 값 (마감 5분)"
+                              "설정한 상황 그대로 (S0)"
                             )}
                           </td>
                           <td className="strong">{labelOf(b.selected_id)}</td>
