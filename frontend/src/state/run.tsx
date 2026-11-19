@@ -284,14 +284,25 @@ function analysisFrom(st: V2StateResp, dec: V2DecideResp, fans: Record<string, b
   const incidents = (dec.problems?.length ? dec.problems : st.problems).map(fromProblem);
   const candidates = dec.candidates.map((c) => fromCandidate(c, base, incidents));
   const n = candidates.length;
+  const sv = dec.decision.stats;
   return {
     base,
     analysis: {
       incidents,
       sim: fromNoAction(st.no_action),
-      stats: { strategies: STRATEGY_COUNT, built: n, merged: n, pareto: n, safe: n, sent: n },
+      stats: {
+        strategies: sv?.strategies ?? STRATEGY_COUNT, built: sv?.built ?? n, merged: sv?.merged ?? n,
+        pareto: sv?.pareto ?? n, safe: sv?.safe ?? n, sent: sv?.sent ?? n,
+      },
       candidates,
-      rejected: [],
+      rejected: (dec.rejected ?? []).map((x) => ({ strategy: x.strategy, reason: x.reason, policy: x.policy ?? undefined })),
+      provider: dec.decision.provider,
+      fallbackReason: dec.decision.fallback_reason,
+      probs: dec.decision.probs,
+      offered: dec.decision.model_candidates ?? candidates.map((c) => c.id),
+      agreement: dec.decision.agreement ?? null,
+      needsReview: dec.decision.needs_review,
+      latencyMs: dec.decision.latency_ms,
       pickId: dec.decision.selected_id,
       rationale: dec.decision.rationale ?? (dec.decision.status === "handoff" ? "안전한 계획이 없어 사람에게 넘깁니다." : ""),
     },
@@ -364,7 +375,7 @@ function LiveRunProvider({ children }: { children: ReactNode }) {
     round: (no) => views.find((r) => r.no === no),
     start: async (s, nm) => {
       await guard(async () => {
-        const st = await v2.scenario(s);
+        const st = await v2.scenario(s, nm);
         const dec = await v2.decide();
         const f = Object.fromEntries(s.nodes.map((n) => [n.id, n.fan]));
         const a = analysisFrom(st, dec, f);

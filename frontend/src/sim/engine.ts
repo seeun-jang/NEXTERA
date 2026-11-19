@@ -2,7 +2,7 @@
 // 백엔드가 같은 입력(노드 · 구역 · 일)을 받아 같은 출력(사건 · 후보 · 회차)을 돌려주면 이 파일만 교체하면 된다.
 // 발열 · 속도 계수는 시연용 단순 모델이다(시뮬레이션 추정). 전수 탐색이 아니므로 "최적"이 아니라 "검증된 전략안 중 선택"이다.
 import {
-  DEFER_MIN, DT, HORIZON_MIN, LIMIT_C, MAX_CANDIDATES, MAX_JOBS_PER_NODE, NODE_GPUS, PRI_RANK, RESTART_MIN, RETURN_C,
+  DEFER_MIN, DT, HORIZON_MIN, LIMIT_C, MAX_CANDIDATES, MAX_JOBS_PER_NODE, NODE_GPUS, PRI_RANK, RECOVER_MIN, RESTART_MIN, RETURN_C,
   THROTTLE_C, zoneOfNode, type JobCfg, type NodeCfg, type Pri, type Role, type Situation, type ZoneCfg,
 } from "./model";
 
@@ -30,19 +30,17 @@ const cloneState = (s: State): State => JSON.parse(JSON.stringify(s));
 const zoneLevel = (s: State, nodeId: string) => s.zones.find((z) => z.id === zoneOfNode(nodeId))?.level ?? 1;
 const round1 = (x: number) => Math.round(x * 10) / 10;
 
-/** 노드 안에서 앞에서부터 GPU 합이 8장 이하인 동안 실행, 그 뒤는 대기 (줄 서기) */
+/** 노드 안에서 줄 순서대로 GPU 합이 8장 이하인 만큼 실행. 못 들어가는 일은 대기하고, 뒤의 작은 일이 빈자리에 들어갈 수 있으면 먼저 실행한다 (백엔드 규칙과 같음) */
 function splitQueue<T extends { gpus: number; seq: number }>(jobs: T[]): { running: T[]; waiting: T[] } {
   const sorted = [...jobs].sort((a, b) => a.seq - b.seq);
   const running: T[] = [];
   const waiting: T[] = [];
   let sum = 0;
-  let blocked = false;
   for (const j of sorted) {
-    if (!blocked && sum + j.gpus <= NODE_GPUS) {
+    if (sum + j.gpus <= NODE_GPUS) {
       running.push(j);
       sum += j.gpus;
     } else {
-      blocked = true;
       waiting.push(j);
     }
   }
@@ -92,11 +90,14 @@ export function simulate(s0: State): SimResult {
   const series: Record<string, { t: number; temp: number }[]> = {};
   const peak: Record<string, number> = {};
   const firstOver: Record<string, number | null> = {};
+  // 시작부터 한계 이상인 노드: RECOVER_MIN 안에 한계 아래로 내려오면 그때부터 다시 본다 (백엔드 규칙과 같음)
+  const recovering: Record<string, boolean> = {};
   for (const n of s.nodes) {
     temp[n.id] = n.temp;
     series[n.id] = [{ t: 0, temp: round1(n.temp) }];
     peak[n.id] = n.temp;
     firstOver[n.id] = n.temp >= LIMIT_C ? 0 : null;
+    recovering[n.id] = n.temp >= LIMIT_C;
   }
   let frontSeq = -1000;
   for (let t = 0; t < HORIZON_MIN - 1e-9; t += DT) {
@@ -127,6 +128,16 @@ export function simulate(s0: State): SimResult {
       temp[n.id] += (eq - temp[n.id]) * (1 - Math.exp(-DT / TAU));
       const tt = round1(t + DT);
       series[n.id].push({ t: tt, temp: round1(temp[n.id]) });
+      if (recovering[n.id]) {
+        if (temp[n.id] < LIMIT_C) {
+          recovering[n.id] = false;
+          peak[n.id] = temp[n.id];
+          firstOver[n.id] = null;
+        } else if (tt >= RECOVER_MIN) {
+          recovering[n.id] = false;
+        }
+        continue;
+      }
       peak[n.id] = Math.max(peak[n.id], temp[n.id]);
       if (firstOver[n.id] === null && temp[n.id] >= LIMIT_C) firstOver[n.id] = tt;
     }
@@ -246,7 +257,6 @@ export function applyStep(s0: State, st: Step): State | StepError {
   }
   // defer
   if (j.priority === "P0") return { error: `${j.id}는 P0라 멈출 수 없습니다`, policy: "POL-01" };
-  if (j.priority !== "P2") return { error: `${j.id}는 ${j.priority}라 연기할 수 없습니다 (낮은 우선순위만)`, policy: "POL-06" };
   if (j.deferUntil > 0) return { error: `${j.id}는 이미 연기되었습니다` };
   j.deferUntil = DEFER_MIN;
   if (wasRunning) j.delay += RESTART_MIN;
@@ -438,6 +448,14 @@ export interface Analysis {
   rejected: Rejected[];
   pickId: string | null;
   rationale: string;
+  // ---- 서버(live) 판단에서만 채워진다
+  provider?: "zoro1" | "rule" | "mock";
+  fallbackReason?: string | null;
+  probs?: Record<string, number> | null; // 후보별 확률 (Zoro-1 에 준 후보만)
+  offered?: string[]; // Zoro-1 에 선택지로 준 후보 id
+  agreement?: string | null; // 후보 순서를 바꿔 물었을 때 최종 선택이 1위였던 횟수 "3/4"
+  needsReview?: boolean;
+  latencyMs?: number;
 }
 
 /** 한 회차의 판단: 사건 계산 → 전략별 연쇄 계획 → 정리 · 합치기 · 열위 제거 → Safety Gate → 최대 24개 → 선택 */

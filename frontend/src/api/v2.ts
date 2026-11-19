@@ -2,23 +2,13 @@
 // 백엔드 응답 모양이 바뀌면 이 파일의 타입과 from*() 변환만 고치면 된다. 화면 코드는 건드리지 않는다.
 import { ApiClientError } from "./errors";
 import { getClientRole } from "./role";
+import { sessionId } from "./session";
 import type { Incident, Plan, SimResult, State, Step } from "@/sim/engine";
 import type { Pri, Role, Situation } from "@/sim/model";
 
-const BASE = (import.meta.env.VITE_API_BASE ?? "http://localhost:8000").replace(/\/$/, "");
+const BASE = (import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? "http://localhost:8000" : "")).replace(/\/$/, "");
 
-function sessionId(): string {
-  try {
-    let id = sessionStorage.getItem("nx-session");
-    if (!id) {
-      id = `S-${Math.random().toString(36).slice(2, 10)}`;
-      sessionStorage.setItem("nx-session", id);
-    }
-    return id;
-  } catch {
-    return "S-anon";
-  }
-}
+export { sessionId };
 
 async function http<T>(method: "GET" | "POST", path: string, body?: unknown, role?: string): Promise<T> {
   let res: Response;
@@ -32,7 +22,12 @@ async function http<T>(method: "GET" | "POST", path: string, body?: unknown, rol
     throw new ApiClientError(0, { code: "NETWORK", message: `서버에 연결할 수 없습니다 (${BASE})` });
   }
   const text = await res.text();
-  const json = text ? JSON.parse(text) : null;
+  let json: any = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    throw new ApiClientError(res.status, { code: "INTERNAL", message: `서버가 JSON이 아닌 응답을 보냈습니다 (HTTP ${res.status})` });
+  }
   if (!res.ok) throw new ApiClientError(res.status, json?.error ?? { code: "INTERNAL", message: `HTTP ${res.status}` });
   return json as T;
 }
@@ -42,7 +37,7 @@ export interface V2Node { id: string; zone: string; temp_c: number; gpus_total: 
 export interface V2Zone { id: string; node_ids: string[]; cooling_level: number; cooling_max: number }
 export interface V2Job { id: string; gpus: number; priority: Pri; deadline_min: number | null; remaining_min: number; node: string; status: "running" | "waiting" | "deferred" }
 export interface V2Problem { id: string; kind: "overheat" | "deadline"; node?: string | null; job?: string | null; priority: Pri; severity: string; time_min: number; text: string }
-export interface V2NoAction { peak_c: number; reach_limit_min: number | null; temps: Record<string, number[]>; job_finish_min: Record<string, number>; late_jobs: string[] }
+export interface V2NoAction { peak_c: unknown; reach_limit_min: unknown; temps: Record<string, number[]>; job_finish_min: Record<string, number>; late_jobs: unknown[]; cooling_kwh?: number }
 export interface V2StateResp {
   round: number; max_rounds: number; status: string;
   state: { nodes: V2Node[]; zones: V2Zone[]; jobs: V2Job[] };
@@ -52,13 +47,17 @@ export interface V2Step { index: number; type: "move" | "jump" | "evacuate" | "d
 export interface V2Candidate {
   id: string; label: string; strategies: string[]; steps: V2Step[]; required_roles: Role[];
   max_peak_c: number; max_peak_node: string; peak_c?: Record<string, number> | number; cooling_kwh: number; cooling_kwh_delta?: number;
-  late_jobs: string[]; job_finish_min: Record<string, number>; resolved: string[]; remaining: string[]; new_problems: string[];
+  late_jobs: unknown[]; job_finish_min: Record<string, number>; resolved: string[]; remaining: string[]; new_problems: string[];
+  temps?: Record<string, number[]>; offered_to_model?: boolean;
 }
 export interface V2Decision {
   status: "decided" | "handoff" | "no_problem"; provider: "zoro1" | "rule" | "mock"; selected_id: string | null;
   probs: Record<string, number> | null; rationale: string | null; fallback_reason: string | null; escalate?: unknown[];
+  model_candidates?: string[]; agreement?: string | null; votes?: { order: string; choice: string; prob: number }[] | null;
+  needs_review?: boolean; latency_ms?: number;
+  stats?: { strategies?: number; built?: number; merged?: number; safe?: number; pareto?: number; sent?: number; gen_ms?: number; sims?: number } | null;
 }
-export interface V2DecideResp { decision: V2Decision; candidates: V2Candidate[]; problems: V2Problem[]; escalate: unknown[] }
+export interface V2DecideResp { decision: V2Decision; candidates: V2Candidate[]; problems: V2Problem[]; escalate: unknown[]; rejected?: { strategy: string; reason: string; policy?: string | null }[] }
 export interface V2ValidateResp { verdict: "conditional" | "blocked"; checks: { policy_id?: string; rule?: string; result: string; message?: string; text?: string }[]; required_roles: Role[] }
 export interface V2ExecuteResp {
   status: "succeeded" | "held"; before: V2StateResp["state"]; after: V2StateResp["state"];
@@ -67,22 +66,31 @@ export interface V2ExecuteResp {
 }
 export interface V2ReceiptResp { events?: { at?: string; time?: string; actor?: string; type?: string; kind?: string; text?: string; summary?: string; round?: number }[] }
 
+/** 누적 시연 기록 (접속자별 최근 max개, 최신순) */
+export interface V2HistoryRun {
+  run_id: number; started_at: number | null; name?: string | null; summary: string; status: string;
+  rounds: { round: number; status: string; provider: string; problem_ids: string[]; selected_id: string | null; selected_label: string | null;
+    candidates: number; sent: number; executed: boolean; resolved: string[]; remaining: string[]; next: string | null }[];
+}
+export interface V2HistoryResp { max: number; runs: V2HistoryRun[]; archived_total?: number; hidden?: number }
+
 // ---------- 호출 ----------
 export const v2 = {
-  scenario: (s: Situation) => http<V2StateResp>("POST", "/scenario", toScenarioBody(s)),
+  scenario: (s: Situation, name?: string) => http<V2StateResp>("POST", "/scenario", { ...toScenarioBody(s), name }),
   state: () => http<V2StateResp>("GET", "/state"),
   decide: () => http<V2DecideResp>("POST", "/decide", {}),
   validate: (body: { plan_id: string } | { steps: unknown[] }) => http<V2ValidateResp>("POST", "/validate", body),
   approve: (planId: string, role: string) => http<{ status: string }>("POST", "/approvals", { plan_id: planId, action: "approve" }, role),
   execute: (planId: string) => http<V2ExecuteResp>("POST", "/execute", { plan_id: planId }),
   receipt: () => http<V2ReceiptResp>("GET", "/receipt"),
+  history: () => http<V2HistoryResp>("GET", "/history"),
 };
 
 // ---------- 화면 → 서버 ----------
-/** 팬 이상은 서버가 받지 않는다(온도만 받음). 같은 노드 안 순서는 배열 순서 그대로. */
+/** 서버도 팬 이상을 받아 같은 발열 식으로 계산한다. 같은 노드 안 순서는 배열 순서 그대로. */
 export function toScenarioBody(s: Situation) {
   return {
-    nodes: s.nodes.map((n) => ({ id: n.id, temp_c: n.temp })),
+    nodes: s.nodes.map((n) => ({ id: n.id, temp_c: n.temp, fan: n.fan })),
     zones: s.zones.map((z) => ({ id: z.id, cooling_level: z.level, cooling_max: z.max })),
     jobs: s.jobs.map((j) => ({ id: j.id, gpus: j.gpus, priority: j.priority, deadline_min: j.deadline, remaining_min: j.work, node: j.node })),
     objective: "balanced",
@@ -128,7 +136,13 @@ export function fromNoAction(na: V2NoAction, limit = 88): SimResult {
     const hit = series[id].find((x) => x.temp >= limit);
     firstOver[id] = hit ? hit.t : null;
   }
-  return { series, peak, firstOver, finish: na.job_finish_min ?? {}, energy: 0 };
+  return { series, peak, firstOver, finish: na.job_finish_min ?? {}, energy: na.cooling_kwh ?? 0 };
+}
+/** 서버의 노드별 온도 배열(30초 간격) → 화면 차트용 점 */
+function seriesOf(temps?: Record<string, number[]>): SimResult["series"] {
+  const out: SimResult["series"] = {};
+  for (const [id, arr] of Object.entries(temps ?? {})) out[id] = arr.map((t, i) => ({ t: i * 0.5, temp: Math.round(t * 10) / 10 }));
+  return out;
 }
 const STEP_KIND: Record<V2Step["type"], Step["kind"]> = { move: "move", jump: "preempt", evacuate: "evac", defer: "defer", cool: "cool" };
 export function fromStep(st: V2Step, base: State): Step {
@@ -149,7 +163,7 @@ export function fromCandidate(c: V2Candidate, base: State, problems: Incident[],
     stepText: c.steps.map((s) => s.label),
     roles: c.required_roles,
     state: after ?? base,
-    sim: { series: {}, peak: { [c.max_peak_node]: c.max_peak_c }, firstOver: {}, finish: c.job_finish_min ?? {}, energy: c.cooling_kwh },
+    sim: { series: seriesOf(c.temps), peak: { [c.max_peak_node]: c.max_peak_c }, firstOver: {}, finish: c.job_finish_min ?? {}, energy: c.cooling_kwh },
     remaining,
     solved: c.resolved,
     peak: c.max_peak_c,

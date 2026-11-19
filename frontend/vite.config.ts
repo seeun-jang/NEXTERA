@@ -16,7 +16,7 @@ export default defineConfig({
   server: {
     port: 5173,
     fs: { allow: [".."] },
-    host: true,
-    allowedHosts: [".trycloudflare.com"],
+    host: true, // 같은 와이파이·터널에서 접속 허용
+    allowedHosts: [".trycloudflare.com"], // Cloudflare 터널 주소 허용(share.ps1)
   },
 });

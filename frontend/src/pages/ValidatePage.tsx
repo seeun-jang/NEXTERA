@@ -26,7 +26,7 @@ function checksFor(base: State, plan: Plan): Check[] {
     } else if (st.kind === "preempt") {
       out.push({ policy_id: "POL-09", name: `${label} 멈추기 규칙`, criterion: "더 급한 일만 다른 일을 멈춤 · P0는 멈추지 않음", observed: "멈추는 일보다 급함 · 재시작 지연 반영", result: "pass" });
     } else if (st.kind === "defer") {
-      out.push({ policy_id: "POL-06", name: `${label} 연기 대상`, criterion: "P2 일 · 30분 이내", observed: `${st.job} 30분 연기`, result: "pass" });
+      out.push({ policy_id: "POL-06", name: `${label} 연기 대상`, criterion: "P0 제외 · 30분 이내", observed: `${st.job} 30분 연기`, result: "pass" });
     } else {
       const z = cur.zones.find((x) => x.id === st.zone)!;
       out.push({ policy_id: "COOL-MAX", name: `${label} 냉각 상한`, criterion: `레벨 ≤ ${z.max}`, observed: `${z.level} → ${z.level + st.delta}`, result: "pass" });

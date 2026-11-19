@@ -1,9 +1,11 @@
-﻿# NEXTERA 데모 서버 외부 공개 (Cloudflare 터널)
+# NEXTERA 데모 서버 외부 공개 (Cloudflare 터널)
+# 실행: powershell -ExecutionPolicy Bypass -File C:\NEXTERA\frontend\share.ps1
+# 처음 한 번: winget install Cloudflare.cloudflared
 Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Process cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 
-Start-Process powershell -ArgumentList '-NoExit','-Command','cd C:\NEXTERA\frontend; npm run dev'
+Start-Process powershell -ArgumentList '-NoExit','-Command',"cd `"$PSScriptRoot`"; npm run dev"
 
 $ok = $false
 for ($i = 0; $i -lt 20; $i++) {

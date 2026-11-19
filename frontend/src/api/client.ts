@@ -5,19 +5,24 @@ import { mockApi } from "@/mocks";
 import { ApiClientError } from "./errors";
 import { getClientRole } from "./role";
 import type { NexteraApi } from "./types";
+import { sessionId } from "./v2";
 
 export { ApiClientError } from "./errors";
 export type { NexteraApi, AnalyticsResponse } from "./types";
 
-export const API_MODE: "mock" | "live" = import.meta.env.VITE_API_MODE === "live" ? "live" : "mock";
-const BASE = (import.meta.env.VITE_API_BASE ?? "http://localhost:8000").replace(/\/$/, "");
+// 값을 주지 않으면 개발 서버(npm run dev)는 mock, 빌드본(npm run build)은 live 로 동작한다.
+const MODE_ENV = import.meta.env.VITE_API_MODE;
+export const API_MODE: "mock" | "live" = MODE_ENV ? (MODE_ENV === "live" ? "live" : "mock") : import.meta.env.PROD ? "live" : "mock";
+// 개발 서버에서는 localhost:8000, 빌드본은 같은 서버(상대 경로 /api)를 기본으로 부른다(백엔드가 dist 를 직접 서빙).
+export const API_BASE = (import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? "http://localhost:8000" : "")).replace(/\/$/, "");
+const BASE = API_BASE;
 
 async function http<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
       method,
-      headers: { "Content-Type": "application/json", "X-Role": getClientRole() },
+      headers: { "Content-Type": "application/json", "X-Role": getClientRole(), "X-Session": sessionId() }, // /api/v2 와 같은 세션
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {

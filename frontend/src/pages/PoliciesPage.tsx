@@ -58,7 +58,7 @@ export default function PoliciesPage() {
             </Card>
           </Section>
 
-          <Section title="AI에게 가는 후보" desc={`검증된 전략안만 Zoro-1에 전달 (최대 ${MAX_CANDIDATES}개)`} className="nx-split-side">
+          <Section title="AI에게 가는 후보" desc={analysis.offered ? `검증된 전략안 중 규칙 순위 상위 ${Math.max(analysis.offered.length, st.sent)}개를 Zoro-1에 전달` : `검증된 전략안만 Zoro-1에 전달 (최대 ${MAX_CANDIDATES}개)`} className="nx-split-side">
             <Card className="nx-fill-top">
               <div className="nx-funnel nx-funnel--v">
                 {funnel.map((f) => (

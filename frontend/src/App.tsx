@@ -14,6 +14,7 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import HandoffPage from "@/pages/HandoffPage";
 import ScenarioPage from "@/pages/ScenarioPage";
 import RoundPage from "@/pages/RoundPage";
+import ArchivePage from "@/pages/ArchivePage";
 
 // 라우트 = 화면 01~12 (번호와 단계는 components/common/StageGuide.tsx 한 곳에서 관리)
 export default function App() {
@@ -36,6 +37,8 @@ export default function App() {
         <Route path="/receipts" element={<ReceiptPage />} />
         <Route path="/receipts/:id" element={<ReceiptPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/archive" element={<ArchivePage />} />
+        <Route path="/archive/:id" element={<ArchivePage />} />
         {/* 예전 조건 실험 주소는 상황 설정으로 보낸다 */}
         <Route path="/lab/*" element={<Navigate to="/scenario" replace />} />
         <Route path="*" element={<NotFound />} />

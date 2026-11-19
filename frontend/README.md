@@ -20,6 +20,7 @@ npm run dev                 # http://localhost:5173
 - 실행 상태: `src/state/run.tsx` — mock이면 엔진, live면 `/api/v2`.
 - 백엔드 연결: `src/api/v2.ts` 한 파일이 MULTI_API.md 모양 ↔ 화면 모양을 바꾼다. 응답 모양이 바뀌면 이 파일만 고친다. 자세한 대응표는 `FRONT_V2_NOTE.md`.
 - 자동 시연: 주소 끝에 `?tour=1`(발표용 2분) · `?tour=full`(제출용 약 5분).
+- 저장소: `/archive`(목록) · `/archive/:id`(상세, 같은 상황으로 다시 시연). `src/api/archive.ts` + `src/pages/ArchivePage.tsx`. 결정 영수증의 누적 기록은 최근 10건만, 지난 기록은 저장소에 남는다. 세션 번호(`X-Session`)는 `src/api/session.ts`에서 localStorage로 관리. 백엔드 회신은 `FRONT_ARCHIVE_REPLY.md`.
 
 ## 구조
 

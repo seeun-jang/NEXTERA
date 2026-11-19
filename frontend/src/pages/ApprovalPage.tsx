@@ -54,7 +54,7 @@ export default function ApprovalPage() {
 
   return (
     <>
-      <PageHeader crumbs={["협업·승인", `${r.no}회차`]} title="협업·승인" right={<><StatusChip variant="sim" /><ProviderChip provider="mock" /></>} />
+      <PageHeader crumbs={["협업·승인", `${r.no}회차`]} title="협업·승인" right={<><StatusChip variant="sim" /><ProviderChip provider={r.analysis.provider ?? "mock"} fallbackReason={r.analysis.fallbackReason} /></>} />
       <div className="nx-content">
         <div className="nx-stepper-wrap">
           <Stepper

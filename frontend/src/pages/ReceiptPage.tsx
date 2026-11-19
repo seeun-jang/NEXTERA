@@ -1,16 +1,33 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { v2, type V2HistoryResp } from "@/api/v2";
 import { Button, Card, PageHeader, Section, StatusChip } from "@/components/common";
 import { RoleChips } from "@/components/screens/sim";
+import { ArchiveLink } from "@/components/screens/ArchiveLink";
 import { ROLE_NAME, type Role } from "@/sim/model";
 import { STOP_TEXT, useRun } from "@/state/run";
 
 // SCREEN 11 · 결정 영수증 — 상황 설정부터 회차별 사건 · 후보 · 선택 · 검사 · 승인 · 실행까지 하나의 기록으로 남긴다.
+const RUN_STATUS: Record<string, string> = { open: "진행 중", resolved: "모두 해결", handoff: "사람에게 넘김", stalled: "진전 없어 사람에게 넘김", max_rounds: "최대 회차 · 사람에게 넘김" };
+const clockOf = (ts: number | null) => (ts ? new Date(ts * 1000).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—");
+
 const ACTOR: Record<string, string> = { system: "시스템", model: "Zoro-1", operator: "관제 운영자", cooling_A: "A · 냉각", gpu_B: "B · GPU", simulator: "시뮬레이터" };
 
 export default function ReceiptPage() {
   const navigate = useNavigate();
   const run = useRun();
   const s = run.situation;
+  // 누적 기록: 최근 history.max(10)건만 보인다. 그보다 오래된 시연은 지워지지 않고 저장소(/archive)에 남는다(hidden = 저장소에만 있는 건수). mock 모드에는 없다.
+  const [history, setHistory] = useState<V2HistoryResp | null>(null);
+  const eventCount = run.events.length;
+  useEffect(() => {
+    if (run.mode !== "live") return;
+    let alive = true;
+    v2.history().then((h) => alive && setHistory(h)).catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [run.mode, eventCount]);
 
   return (
     <>
@@ -49,6 +66,36 @@ export default function ReceiptPage() {
             </Section>
           </div>
 
+          {history && history.runs.length > 0 && (
+            <Section title={`누적 기록 · ${history.runs.length}건`} desc={`이 브라우저에서 돌린 시연 · 최근 ${history.max}건만 보입니다. 지난 기록은 저장소에 남습니다`} right={<ArchiveLink hidden={history.hidden ?? 0} size="sm" />}>
+              <Card>
+                <table className="nx-table nx-receipt-rounds">
+                  <thead><tr><th>번호</th><th>시작</th><th>상황</th><th>회차별 선택</th><th>결과</th></tr></thead>
+                  <tbody>
+                    {history.runs.map((h, i) => (
+                      <tr key={h.run_id} className={i === 0 ? "nx-row-pick" : undefined}>
+                        <td className="strong mono">#{h.run_id}{i === 0 ? " · 현재" : ""}</td>
+                        <td className="mono">{clockOf(h.started_at)}</td>
+                        <td>{h.name ? <><b>{h.name}</b><br /></> : null}<span className="caption">{h.summary}</span></td>
+                        <td>
+                          {h.rounds.length
+                            ? h.rounds.map((d) => (
+                                <div key={d.round}>
+                                  <b>{d.round}회차</b> · {d.selected_label ?? (d.status === "handoff" ? "사람에게 넘김" : "조치 불필요")}
+                                  <span className="caption"> · 사건 {d.problem_ids.length}건 · {d.provider === "zoro1" ? "Zoro-1" : d.provider === "rule" ? "규칙" : "MOCK"}{d.executed ? ` · 해결 ${d.resolved.length} · 남음 ${d.remaining.length}` : ""}</span>
+                                </div>
+                              ))
+                            : <span className="caption">판단 전</span>}
+                        </td>
+                        <td>{RUN_STATUS[h.status] ?? h.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Card>
+            </Section>
+          )}
+
           <Section title="타임라인" desc="누가 · 언제 · 무엇을">
             <Card>
               <ol className="nx-timeline">
@@ -68,6 +115,7 @@ export default function ReceiptPage() {
         <div className="nx-actions">
           <Button variant="secondary" onClick={() => navigate("/")}>처음부터 다시 시연</Button>
           <Button variant="secondary" onClick={() => navigate("/scenario")}>다른 상황으로 다시 보기</Button>
+          {!(history && history.runs.length > 0) && <ArchiveLink />}
           <Button arrow onClick={() => navigate("/analytics")}>기록 상세 보기</Button>
         </div>
       </div>

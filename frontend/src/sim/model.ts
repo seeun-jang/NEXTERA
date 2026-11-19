@@ -35,6 +35,7 @@ export const MAX_NODES = 6;
 export const MAX_JOBS = 10;
 export const LIMIT_C = 88; // 안전 한계 (POL-02)
 export const THROTTLE_C = 85; // 이 온도부터 작업 속도 저하
+export const RECOVER_MIN = 2; // 시작부터 한계 이상인 노드가 이 시간 안에 한계 아래로 내려오면 과열로 보지 않는다 (백엔드와 같음)
 export const RETURN_C = 78; // 임시 대피한 일이 원래 노드로 돌아오는 온도 (백엔드와 같음)
 export const RESTART_MIN = 1; // 멈추거나 옮긴 일의 재시작 지연
 export const DEFER_MIN = 30; // 연기 시간 (POL-06: 30분 이내)

@@ -28,6 +28,7 @@ export function AppShell() {
     { label: "의사결정", icon: "clock", to: `/decision/${cur}`, match: ["/decision"] },
     { label: "협업·승인", icon: "users", to: `/approvals/${cur}`, match: ["/approvals", "/executions", "/rounds"] },
     { label: "기록·분석", icon: "chart", to: "/receipts", match: ["/receipts", "/analytics"] },
+    { label: "저장소", icon: "inbox", to: "/archive", match: ["/archive"] },
   ];
 
   return (

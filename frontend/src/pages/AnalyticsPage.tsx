@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArchiveLink } from "@/components/screens/ArchiveLink";
 import { useNavigate } from "react-router-dom";
 import { api, type AnalyticsResponse } from "@/api/client";
 import { Button, Card, ErrorState, Icon, Kpi, PageHeader, PageSkeleton, Section, StatusChip } from "@/components/common";
@@ -7,14 +8,14 @@ import { useApi } from "@/hooks/useApi";
 // SCREEN 11 · 기록·분석 — 쌓인 결정 기록으로 운영 품질을 보고, 실패 패턴을 정책·시스템 개선으로 연결한다.
 // 집계 숫자는 화면 설계용 예시(is_example)일 때 반드시 "예시 데이터 · 측정값 아님"을 붙인다.
 const FILTERS = {
-  scenario: ["전체", "열 위험", "승인 지연", "용량 부족", "정비 일정"],
+  scenario: ["전체", "과열 위험", "마감 위험"], // 서버의 사건 유형(HOT- · LATE-)과 같다
   policy: ["v1.2"],
   period: ["최근 7일", "오늘", "최근 30일"],
-  result: ["전체", "성공", "보류", "실패"],
+  result: ["전체", "성공", "실패"], // 실패 = 안전한 계획이 없어 실행하지 못하고 사람에게 넘긴 결정
 } as const;
 type FilterKey = keyof typeof FILTERS;
 const FILTER_LABEL: Record<FilterKey, string> = { scenario: "시나리오", policy: "정책", period: "기간", result: "결과" };
-const STATUS = { open: "진행 중", executed: "성공", held: "보류", failed: "실패" } as const;
+const STATUS = { open: "진행 중", executed: "성공", held: "실패", failed: "실패" } as const;
 
 /** 사건 유형별 결정 건수(막대) + 그중 마감 미준수(빗금). 한 가지 색 + 빗금이라 색만으로 구분하지 않는다. */
 function TypeBars({ rows }: { rows: AnalyticsResponse["by_type"] }) {
@@ -89,6 +90,12 @@ export default function AnalyticsPage() {
       deadline_met: r.execution ? r.execution.sla.met : null,
       real: true,
     };
+  }).filter((r) => {
+    // 위 필터를 표에도 적용한다 (집계는 서버가 같은 조건으로 계산)
+    if (filters.result !== "전체" && STATUS[r.status] !== filters.result) return false;
+    if (filters.scenario === "과열 위험" && !r.incident_id.includes("HOT-")) return false;
+    if (filters.scenario === "마감 위험" && !r.incident_id.includes("LATE-")) return false;
+    return true;
   });
   const recent = [...live, ...a.recent.filter((x) => !live.some((l) => l.decision_id === x.decision_id)).map((x) => ({ ...x, real: false }))];
 
@@ -129,7 +136,7 @@ export default function AnalyticsPage() {
             <Kpi label="사람 이관률" value={a.escalation_rate_pct} unit="%" />
             <Kpi label="마감 준수" value={`${a.deadline_met.met} / ${a.deadline_met.total}`} />
             <Kpi label="결정 일관성" value={`${a.consistency.same} / ${a.consistency.total}`} sub="같은 입력 반복" />
-            <Kpi label="실행 결과" value={`${a.results.succeeded} · ${a.results.held} · ${a.results.failed}`} sub="성공 · 보류 · 실패" />
+            <Kpi label="실행 결과" value={`${a.results.succeeded} · ${a.results.failed + a.results.held}`} sub="성공 · 실패" />
           </div>
         </Section>
 
@@ -142,7 +149,7 @@ export default function AnalyticsPage() {
           <Section title="읽는 법" desc="이 화면에서 찾을 것" className="nx-split-side">
             <Card className="nx-fill-top">
               <p className="nx-why">
-                기록을 사건 유형별로 묶으면, 결정 건수 대비 <strong>승인 지연</strong>에서 마감 미준수가 가장 많이 나옵니다. 아래 실패 패턴은 다음 정책 버전 검토 항목으로 바로 연결됩니다.
+                기록을 사건 유형별로 묶어 결정 건수와 그중 <strong>마감 미준수</strong>를 봅니다. 아래 실패 패턴은 다음 정책 버전 검토 항목으로 바로 연결됩니다. 수치는 이 서버에서 실제로 돌린 시연 기록의 집계입니다.
               </p>
             </Card>
           </Section>
@@ -222,6 +229,7 @@ export default function AnalyticsPage() {
         </Section>
 
         <div className="nx-actions">
+          <ArchiveLink />
           <Button variant="secondary" onClick={() => navigate("/")}>처음부터 다시 시연</Button>
           {live[0] && (
             <Button arrow onClick={() => navigate(`/receipts/${live[0].decision_id}`)}>
