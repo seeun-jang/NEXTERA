@@ -1,179 +1,107 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { ApprovalDecisionRequest, RoleId } from "@contracts/types";
-import { api, newIdempotencyKey } from "@/api/client";
-import { ApiClientError } from "@/api/errors";
+import type { RoleId } from "@contracts/types";
 import { ROLE_LABEL } from "@/api/role";
-import { Button, Card, EmptyState, ErrorState, Icon, PageHeader, PageSkeleton, PolicyTag, ProviderChip, Section, StatusChip, Stepper } from "@/components/common";
-import { useAction, useApi } from "@/hooks/useApi";
+import { Button, Card, Icon, PageHeader, ProviderChip, Section, StatusChip, Stepper } from "@/components/common";
+import { StepList } from "@/components/screens/sim";
+import { ROLE_NAME, type Role } from "@/sim/model";
 import { useDemo } from "@/state/DemoContext";
+import { useRoundParam, useRun } from "@/state/run";
 
-// SCREEN 08 · 협업·승인 — AI 제안을 권한 있는 사람이 검토·승인한다. 권한 없는 승인은 버튼 비활성 + 서버 거부(403) 두 겹.
-const STATUS_LABEL = {
-  pending: "검토 중",
-  approved: "승인됨",
-  changes_requested: "수정 요청",
-  rejected: "거부됨",
-  escalated: "이관됨",
-  expired: "만료",
-} as const;
-const APPROVAL_POLICY: Record<string, string> = { job_migrate: "POL-04", cooling_change: "POL-05", job_defer: "POL-06" };
-const ACTION_WORD: Record<string, string> = { job_migrate: "작업 이동", cooling_change: "냉각 변경", job_defer: "작업 연기" };
-
+// SCREEN 08 · 협업·승인 — 계획에 필요한 역할(A 냉각 · B GPU)이 각각 승인해야 실행된다. 한 계획에 둘 다 필요할 수 있다.
+// 권한 없는 승인은 버튼 비활성 + 서버 거부(데모에서는 실행 상태가 거부) 두 겹.
 export default function ApprovalPage() {
   const navigate = useNavigate();
-  const params = useParams<{ id?: string }>();
-  const { approvalId: ctxApproval, decisionId, role, setRole, setIds } = useDemo();
-  const id = params.id ?? ctxApproval;
+  const { round } = useParams<{ round: string }>();
+  const run = useRun();
+  const r = useRoundParam(round);
+  const { role, setRole } = useDemo();
   const [text, setText] = useState("");
-  const [denied, setDenied] = useState<ApiClientError | null>(null);
+  const [denied, setDenied] = useState<{ reason: string; policy: string } | null>(null);
+  const plan = r.chosen;
 
-  const { data, error, loading, reload, setData } = useApi(
-    async () => (id ? Promise.all([api.getApproval(id), api.getReceipt(decisionId ?? "DR-0412-01")]) : null),
-    [id],
-  );
+  if (!plan) {
+    return (
+      <>
+        <PageHeader crumbs={["협업·승인"]} title="협업·승인" />
+        <div className="nx-content"><Card><p className="caption">승인할 계획이 없습니다.</p></Card></div>
+      </>
+    );
+  }
+  const pending = plan.roles.filter((x) => !r.approvals[x]);
+  const canApprove = pending.includes(role as Role);
+  const lastOne = pending.length === 1 && canApprove;
+  const reason = pending.length && !canApprove ? `${pending.map((x) => ROLE_NAME[x]).join(", ")} 승인이 필요합니다. ${ROLE_LABEL[role]}에게는 이 계획을 승인할 권한이 없습니다.` : null;
 
-  const comment = useAction(async () => {
-    if (!id || !text.trim()) return;
-    const a = await api.commentApproval(id, text.trim());
-    setText("");
-    if (data) setData([a, data[1]]);
-  });
-
-  const decide = useAction(async (action: ApprovalDecisionRequest["action"]) => {
-    if (!id) return;
-    setDenied(null);
-    try {
-      const a = await api.decideApproval(id, { action, idempotency_key: newIdempotencyKey() });
-      if (action === "approve") {
-        // 승인 → 실행 직전 재검사 → 시뮬레이터에 실행 요청
-        const exe = await api.execute({ approval_id: a.approval_id, idempotency_key: newIdempotencyKey() });
-        setIds({ executionId: exe.execution_id });
-        navigate(`/executions/${exe.execution_id}`);
-        return;
-      }
-      if (action === "request_changes") navigate(`/decision/${a.decision_id}`);
-      else navigate(`/receipts/${a.decision_id}`);
-    } catch (e) {
-      if (e instanceof ApiClientError && e.status === 403) {
-        setDenied(e);
-        reload();
-        return;
-      }
-      throw e;
+  const approve = async () => {
+    const need = (canApprove ? role : pending[0]) as Role;
+    const res = await run.approve(r.no, need, role);
+    if (!res.ok) {
+      setDenied({ reason: res.reason, policy: res.policy });
+      return;
     }
-  });
-
-  const header = (
-    <PageHeader
-      crumbs={["협업·승인", id ?? "승인 요청"]}
-      title="협업 · 승인"
-      right={
-        <>
-          <StatusChip variant="sim" />
-          <StatusChip variant="ink">사람 승인 필수</StatusChip>
-        </>
-      }
-    />
-  );
-
-  if (!id)
-    return (
-      <>
-        {header}
-        <div className="nx-content">
-          <Card>
-            <EmptyState
-              title="진행 중인 승인 요청이 없습니다"
-              description="안전 검사에서 '조건부 허용'이 나오면 승인 요청이 만들어집니다."
-              action={<Button variant="secondary" onClick={() => navigate(`/decision/${decisionId ?? "DR-0412-01"}/validate`)}>안전 검사로</Button>}
-            />
-          </Card>
-        </div>
-      </>
-    );
-  if (loading && !data) return <>{header}<PageSkeleton /></>;
-  if (error || !data)
-    return (
-      <>
-        {header}
-        <div className="nx-content">
-          <Card>
-            <ErrorState error={error} onRetry={reload} />
-          </Card>
-        </div>
-      </>
-    );
-
-  const [ap, rc] = data;
-  const cand = rc.candidates.find((c) => c.id === ap.action_id);
-  const validation = rc.validations.find((v) => v.approval_id === ap.approval_id);
-  const slackCheck = validation?.checks.find((c) => c.policy_id === "POL-08");
-  const pid = cand ? APPROVAL_POLICY[cand.type] : undefined;
-  const canDecide = role === ap.required_role;
-  const pending = ap.status === "pending";
-  const history = rc.events.filter((e) => e.ref_id === ap.approval_id || e.ref_id === validation?.validation_id);
-  const reason = !canDecide
-    ? `${ROLE_LABEL[role]}은(는) ${cand ? ACTION_WORD[cand.type] : "이 행동"} 승인 권한이 없습니다${pid ? ` (${pid})` : ""}.`
-    : undefined;
+    setDenied(null);
+    if (lastOne) {
+      await run.execute(r.no);
+      navigate(`/executions/${r.no}`);
+    }
+  };
+  const submitComment = () => {
+    if (!text.trim()) return;
+    run.comment(r.no, role, text.trim());
+    setText("");
+  };
 
   return (
     <>
-      {header}
+      <PageHeader crumbs={["협업·승인", `${r.no}회차`]} title="협업·승인" right={<><StatusChip variant="sim" /><ProviderChip provider="mock" /></>} />
       <div className="nx-content">
-        <div className="nx-flowsteps">
+        <div className="nx-stepper-wrap">
           <Stepper
             steps={[
               { label: "AI 제안", state: "done" },
-              { label: "정책 검사", state: "done" },
-              { label: "사람 검토", state: pending ? "current" : "done" },
-              { label: "승인", state: ap.status === "approved" ? "done" : "todo" },
-              { label: "실행", state: rc.execution ? "done" : "todo" },
+              { label: "안전 검사", state: "done" },
+              { label: "승인", state: pending.length ? "current" : "done" },
+              { label: "실행", state: r.executed ? "done" : "todo" },
             ]}
           />
         </div>
 
         <div className="nx-split">
           <div className="nx-col nx-split-main">
-            <Section title="AI 제안" desc="안전 검사를 통과한 제안 · 원래 제안은 수정되지 않고 영수증에 그대로 남습니다">
+            <Section title="AI 제안" desc="안전 검사를 통과한 계획 · 원래 제안은 수정되지 않고 기록에 그대로 남습니다">
               <div className="nx-proposal">
                 <div className="nx-proposal-main">
-                  <span className="caption">요청 {ap.approval_id}</span>
-                  <strong>{cand?.label ?? ap.action_id}</strong>
+                  <span className="caption">{r.no}회차 · {plan.id}</span>
+                  <strong>{plan.strategy}</strong>
                   <div className="nx-proposal-meta">
-                    <ProviderChip provider={rc.provider} />
-                    <StatusChip variant="neutral">안전 검사 · {validation?.verdict === "conditional" ? "조건부 허용" : validation?.verdict ?? "—"}</StatusChip>
-                    {slackCheck && <StatusChip variant="neutral">{slackCheck.observed}</StatusChip>}
-                    {pid && <PolicyTag id={pid} />}
+                    <StatusChip variant="neutral">안전 검사 · 조건부 허용</StatusChip>
+                    <StatusChip variant="neutral">{plan.steps.length}단계 · 남는 문제 {plan.remaining.length}</StatusChip>
                   </div>
                 </div>
                 <div className="nx-proposal-status">
                   <span className="caption">상태</span>
-                  <strong>{STATUS_LABEL[ap.status]}</strong>
+                  <strong>{pending.length ? `승인 대기 ${pending.length}` : "승인 완료"}</strong>
                 </div>
               </div>
+              <Card>
+                <StepList plan={plan} />
+              </Card>
             </Section>
 
-            <Section title="필요한 승인자" desc={`권한은 정책 v${rc.policy_version} 역할표 기준 · 서버가 한 번 더 확인합니다`}>
+            <Section title="필요한 승인자" desc="단계마다 필요한 역할이 다릅니다 · 실행 상태가 한 번 더 확인합니다">
               <Card>
                 <table className="nx-table">
-                  <thead>
-                    <tr>
-                      <th>담당</th>
-                      <th>이 행동 승인 권한</th>
-                      <th style={{ width: 140 }}>상태</th>
-                    </tr>
-                  </thead>
+                  <thead><tr><th>담당</th><th>승인할 단계</th><th style={{ width: 150 }}>상태</th></tr></thead>
                   <tbody>
-                    {ap.notified_roles.map((r) => {
-                      const req = r === ap.required_role;
+                    {(["cooling_A", "gpu_B"] as Role[]).map((x) => {
+                      const needed = plan.roles.includes(x);
+                      const steps = plan.steps.map((s, i) => ({ s, i })).filter(({ s }) => (s.kind === "cool") === (x === "cooling_A"));
                       return (
-                        <tr key={r} className={r === role ? "nx-row-me" : undefined}>
-                          <td className="strong">
-                            {ROLE_LABEL[r]} {r === role && <span className="nx-me">나</span>}
-                          </td>
-                          <td>{req ? <strong>있음 · 필수</strong> : <span className="muted">없음 · 의견만</span>}</td>
-                          <td>{req ? STATUS_LABEL[ap.status] : ap.comments.some((c) => c.role === r) ? "의견 등록" : "참조"}</td>
+                        <tr key={x} className={x === role ? "nx-row-me" : undefined}>
+                          <td className="strong">{ROLE_NAME[x]} {x === role && <span className="nx-me">나</span>}</td>
+                          <td>{needed ? steps.map(({ i }) => `${i + 1}단계`).join(", ") : <span className="muted">없음 · 의견만</span>}</td>
+                          <td>{needed ? (r.approvals[x] ? `승인 · ${r.approvals[x]}` : "대기") : "참조"}</td>
                         </tr>
                       );
                     })}
@@ -184,13 +112,13 @@ export default function ApprovalPage() {
 
             <Section title="의견" desc="어느 역할이든 의견을 남길 수 있습니다">
               <Card>
-                {ap.comments.length ? (
+                {r.comments.length ? (
                   <ul className="nx-comments">
-                    {ap.comments.map((c, i) => (
+                    {r.comments.map((c, i) => (
                       <li key={i}>
                         <span className="nx-avatar">{c.role === "cooling_A" ? "A" : c.role === "gpu_B" ? "B" : "관"}</span>
                         <div>
-                          <div className="caption">{ROLE_LABEL[c.role]} · {c.at}</div>
+                          <div className="caption">{ROLE_LABEL[c.role as RoleId] ?? c.role} · {c.at}</div>
                           <p>{c.text}</p>
                         </div>
                       </li>
@@ -200,88 +128,60 @@ export default function ApprovalPage() {
                   <p className="muted" style={{ fontSize: 13 }}>아직 의견이 없습니다.</p>
                 )}
                 <div className="nx-comment-input">
-                  <input
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && comment.run()}
-                    placeholder={`${ROLE_LABEL[role]}(으)로 의견 입력…`}
-                    aria-label="의견 입력"
-                  />
-                  <Button size="sm" variant="secondary" onClick={() => comment.run()} disabled={!text.trim() || comment.pending}>
-                    의견 등록
-                  </Button>
+                  <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitComment()} placeholder={`${ROLE_LABEL[role]}(으)로 의견 입력…`} aria-label="의견 입력" />
+                  <Button size="sm" variant="secondary" onClick={submitComment} disabled={!text.trim()}>의견 등록</Button>
                 </div>
               </Card>
             </Section>
           </div>
 
           <div className="nx-col nx-split-side">
-            <Section title="내 결정" desc="사이드바나 아래에서 역할을 바꿔 볼 수 있습니다">
+            <Section title="내 결정" desc="역할을 바꿔 가며 승인해 보세요">
               <div className="nx-decide">
                 <div className="nx-decide-role">
                   <span className="caption">현재 역할</span>
                   <div className="nx-seg">
-                    {(["operator", "cooling_A", "gpu_B"] as RoleId[]).map((r) => (
-                      <button type="button" key={r} className={role === r ? "on" : ""} onClick={() => { setRole(r); setDenied(null); }}>
-                        {ROLE_LABEL[r]}
+                    {(["operator", "cooling_A", "gpu_B"] as RoleId[]).map((x) => (
+                      <button type="button" key={x} className={role === x ? "on" : ""} onClick={() => { setRole(x); setDenied(null); }}>
+                        {ROLE_LABEL[x]}
                       </button>
                     ))}
                   </div>
                 </div>
-
-                {pending ? (
+                {pending.length ? (
                   <>
-                    <Button block arrow onClick={() => decide.run("approve")} disabled={!canDecide || decide.pending}>
-                      {decide.pending ? "재검사 후 실행 중…" : "승인하고 실행"}
+                    <Button block arrow onClick={approve} disabled={!canApprove}>
+                      {lastOne ? "승인하고 실행" : "승인"}
                     </Button>
-                    <div className="nx-decide-row">
-                      <Button variant="secondary" size="sm" onClick={() => decide.run("request_changes")} disabled={!canDecide || decide.pending}>수정 요청</Button>
-                      <Button variant="secondary" size="sm" onClick={() => decide.run("reject")} disabled={!canDecide || decide.pending}>거부</Button>
-                      <Button variant="secondary" size="sm" onClick={() => decide.run("escalate")} disabled={!canDecide || decide.pending}>이관</Button>
-                    </div>
                     {reason && (
                       <div className="nx-decide-block">
                         <Icon name="x" size={14} strokeWidth={3} />
                         <div>
                           <strong>승인 버튼 비활성</strong>
                           <span>{reason}</span>
-                          <button type="button" className="nx-linkbtn" onClick={() => decide.run("approve")}>
-                            그래도 서버에 승인 요청 보내 보기
-                          </button>
+                          <button type="button" className="nx-linkbtn" onClick={approve}>그래도 서버에 승인 요청 보내 보기</button>
                         </div>
                       </div>
                     )}
                     {denied && (
                       <div className="nx-block-danger">
-                        <div className="t">서버가 거부했습니다 · {denied.status} {denied.code}</div>
-                        <div className="d">{denied.message}</div>
+                        <div className="t">거부됨 · 403 ROLE_FORBIDDEN · {denied.policy}</div>
+                        <div className="d">{denied.reason}</div>
                       </div>
                     )}
-                    <p className="caption">수정 요청은 의사결정 센터로 되돌리고, 이관은 운영 책임자에게 넘겨 영수증에 기록합니다.</p>
+                    <p className="caption">모든 필요한 역할이 승인하면 실행 직전에 최신 상태로 다시 검사한 뒤 가상 환경에서 실행합니다.</p>
                   </>
                 ) : (
-                  <div className="nx-banner">
-                    <Icon name="check" size={16} strokeWidth={3} />
-                    <strong>{STATUS_LABEL[ap.status]}</strong>
-                    <span>{ap.decided_by ? `${ROLE_LABEL[ap.decided_by]} · ${ap.decided_at}` : ""}</span>
-                  </div>
+                  <>
+                    <div className="nx-banner"><Icon name="check" size={16} strokeWidth={3} /><strong>승인 완료</strong></div>
+                    {!r.executed ? (
+                      <Button block arrow onClick={async () => { await run.execute(r.no); navigate(`/executions/${r.no}`); }}>실행</Button>
+                    ) : (
+                      <Button block arrow onClick={() => navigate(`/executions/${r.no}`)}>실행 결과 보기</Button>
+                    )}
+                  </>
                 )}
-                {decide.error != null && <ErrorState error={decide.error} />}
               </div>
-            </Section>
-
-            <Section title="승인 이력" desc="결정 영수증에 그대로 기록됩니다">
-              <Card className="nx-fill-top">
-                <ol className="nx-history">
-                  {history.map((e) => (
-                    <li key={e.seq} className={e.type === "blocked" ? "bad" : undefined}>
-                      <span className="mono caption">{e.at}</span>
-                      <span>{e.summary}</span>
-                      <span className="caption">{e.actor === "system" ? "시스템" : ROLE_LABEL[e.actor as RoleId] ?? e.actor}</span>
-                    </li>
-                  ))}
-                </ol>
-              </Card>
             </Section>
           </div>
         </div>

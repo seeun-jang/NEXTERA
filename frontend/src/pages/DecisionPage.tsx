@@ -1,188 +1,92 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { DecideResponse } from "@contracts/types";
-import { api } from "@/api/client";
-import { Button, Card, EmptyState, ErrorState, PageHeader, PageSkeleton, PolicyTag, ProviderChip, Section, StatusChip } from "@/components/common";
-import { CandidateList } from "@/components/screens/CandidateList";
-import { isHandoff } from "@/components/screens/labels";
-import { useAction, useApi } from "@/hooks/useApi";
-import { useDemo } from "@/state/DemoContext";
-import { recallDecision, rememberDecision } from "@/state/decisionCache";
+import { useNavigate, useParams } from "react-router-dom";
+import { Button, Card, Icon, PageHeader, ProviderChip, Section, StatusChip } from "@/components/common";
+import { IncidentList, RoleChips, StepList } from "@/components/screens/sim";
+import { MAX_CANDIDATES } from "@/sim/model";
+import { useRoundParam } from "@/state/run";
 
-// SCREEN 05 · Zoro-1 의사결정 센터 — 정책을 통과한 후보 중 무엇을 골랐는지, 그 출력이 실제인지 예시인지 구분해 보여 준다.
-// 판단은 버튼으로만 실행한다(화면을 열었다고 몰래 POST하지 않음).
-const FALLBACK_LABEL: Record<string, string> = {
-  MOCK_MODE: "MOCK 모드 · 서버 미연결",
-  ZORO1_NOT_CONFIGURED: "Zoro-1 접속 정보 없음",
-  TIMEOUT: "Zoro-1 응답 시간 초과",
-  INVALID_OUTPUT: "Zoro-1 응답 형식 오류",
-};
-
+// SCREEN 05 · 의사결정 센터 — 검증된 계획(후보) 중 Zoro-1이 무엇을 골랐는지 본다. 후보 하나 = 행동 여러 개로 이루어진 계획.
 export default function DecisionPage() {
   const navigate = useNavigate();
-  const { incidentId, setIds } = useDemo();
-  const [result, setResult] = useState<DecideResponse | null>(() => recallDecision("S0"));
-  const ctx = useApi(() => Promise.all([api.getState("S0"), api.getPolicies()]), []);
-  const run = useAction(async () => {
-    const res = await api.decide({ incident_id: incidentId, snapshot_id: "S0", policy_version: ctx.data?.[1].version ?? "1.2" });
-    rememberDecision(res);
-    setIds({ decisionId: res.decision.decision_id });
-    setResult(res);
-  });
-
-  const d = result?.decision;
-  const header = (
-    <PageHeader
-      crumbs={["의사결정", incidentId]}
-      title="Zoro-1 의사결정 센터"
-      right={
-        <>
-          <StatusChip variant="sim" />
-          {d && <ProviderChip provider={d.provider} fallbackReason={d.fallback_reason} />}
-        </>
-      }
-    />
-  );
-  if (ctx.loading && !ctx.data) return <>{header}<PageSkeleton /></>;
-  if (ctx.error || !ctx.data)
-    return (
-      <>
-        {header}
-        <div className="nx-content">
-          <Card>
-            <ErrorState error={ctx.error} onRetry={ctx.reload} />
-          </Card>
-        </div>
-      </>
-    );
-
-  const [snap, pol] = ctx.data;
-  const n4 = snap.nodes.find((n) => n.flags.includes("rising")) ?? snap.nodes.reduce((a, n) => (n.temp_c > a.temp_c ? n : a));
-  const job = snap.jobs.find((j) => n4.job_ids.includes(j.id));
-  const spare = snap.nodes.find((n) => n.gpus_free > 0);
-  const zone = snap.zones.find((z) => z.id === n4.zone_id);
-  const note = snap.notes[0];
-  const cands = result?.candidates ?? pol.candidates;
-  const passed = cands.filter((c) => !c.filtered_out);
-  const selected = d ? cands.find((c) => c.id === d.selected_id) : null;
-
-  // 판단 요청 구조(§9 DecisionInput) 미리보기 — 실제 요청과 같은 모양
-  const request = {
-    state_summary: `${snap.snapshot_id} ${snap.sim_time} · ${n4.id} ${n4.temp_c}°C 상승 · ${job?.id} ${job?.priority} 마감 ${job?.deadline_min}분`,
-    notes: note ? [note.text] : [],
-    policy_summary: `정책 v${pol.version}`,
-    options: passed.map((c) => c.id),
-    criteria: "필수 제약 안에서 마감 준수 우선, 그다음 냉각 에너지",
-  };
+  const { round } = useParams<{ round: string }>();
+  const r = useRoundParam(round);
+  const { analysis, chosen } = r;
+  const live = false; // 실제 Zoro-1 연결 시 provider=zoro1과 후보별 확률이 온다
 
   return (
     <>
-      {header}
+      <PageHeader crumbs={["의사결정", `${r.no}회차`]} title="의사결정 센터 · Zoro-1" right={<><StatusChip variant="sim" /><ProviderChip provider="mock" /></>} />
       <div className="nx-content">
-
-        <div className={`nx-modelbar${d?.provider === "zoro1" ? " live" : ""}`}>
-          <div>
-            <strong>모델 호출</strong>
-            <span>
-              {d
-                ? d.provider === "zoro1"
-                  ? `Zoro-1 응답 · ${d.latency_ms}ms`
-                  : `${d.provider === "rule" ? "규칙 폴백 · " : ""}${FALLBACK_LABEL[d.fallback_reason ?? ""] ?? d.fallback_reason ?? "Zoro-1 미연결"}`
-                : "아직 판단하지 않았습니다"}
-            </span>
-          </div>
-          <div className="nx-modelbar-right">
-            <span className="caption">실제 모델 출력 = 검정 배지 · MOCK = 점선 배지 · 시뮬레이터 추정 = 파란 배지</span>
-          </div>
+        <div className={`nx-modelbar${live ? " live" : ""}`}>
+          <Icon name="sparkle" size={18} />
+          <strong>Zoro-1 판단</strong>
+          <span className="caption">
+            {r.no}회차 · 검증된 후보 {analysis.stats.sent}개 전달 (최대 {MAX_CANDIDATES}) · 이 영상은 MOCK 응답 — 실제 모델 연결 시 후보별 확률 표시
+          </span>
         </div>
 
-        <div className="nx-split nx-split--even">
-          <Section title="입력" desc="모델에 들어가는 상태 · 정책 · 메모" className="nx-split-main">
-            <Card>
-              <dl className="nx-kv nx-kv--wide">
-                <dt>입력 스냅샷</dt>
-                <dd className="mono">{snap.snapshot_id} · {snap.sim_time}</dd>
-                <dt>{n4.id}</dt>
-                <dd><strong>{n4.temp_c}°C · 상승 중</strong></dd>
-                {job && (<><dt>{job.id} ({job.priority})</dt><dd>남은 {job.remaining_min}분 · 마감 {job.deadline_min}분 · GPU {job.gpus}장</dd></>)}
-                {spare && (<><dt>{spare.id} 여유</dt><dd>GPU {spare.gpus_free}장</dd></>)}
-                {zone && (<><dt>{zone.id} 냉각</dt><dd>레벨 {zone.cooling_level} / {zone.cooling_max}</dd></>)}
-                <dt>정책 적용</dt>
-                <dd>v{pol.version} · 후보 {cands.length} → {passed.length}</dd>
-              </dl>
-              <div className="nx-tags">
-                {pol.policies.map((p) => (
-                  <PolicyTag key={p.id} id={p.id} policy={p} />
-                ))}
-              </div>
-              {note && (
-                <div className="nx-note" style={{ marginTop: 14 }}>
-                  <span className="caption">운영자 메모 · 원문 그대로 입력</span>
-                  <div>{note.text}</div>
-                </div>
-              )}
-              <details className="nx-details">
-                <summary>판단 요청 구조 보기</summary>
-                <pre className="nx-code">{JSON.stringify(request, null, 2)}</pre>
-              </details>
-            </Card>
+        {r.no > 1 && (
+          <Section title={`${r.no}회차에 남은 문제`} desc="직전 회차 실행 뒤 다시 계산">
+            <Card><IncidentList items={analysis.incidents} /></Card>
           </Section>
+        )}
 
-          <Section title={`후보 행동 ${passed.length}개`} desc="코드가 만든 후보 · 모델은 이 안에서만 고릅니다" className="nx-split-side">
-            <Card>
-              {d ? (
-                <>
-                  <CandidateList candidates={cands} decision={d} onPreview={(c) => navigate(`/decision/${d.decision_id}/handoff?as=${c.type}`)} />
-                  {d.provider !== "zoro1" && <p className="caption" style={{ marginTop: 10 }}>후보별 확률은 실제 Zoro-1 응답일 때만 표시합니다.</p>}
-                </>
-              ) : (
-                <EmptyState
-                  title="아직 판단 결과가 없습니다"
-                  description="정책을 통과한 후보로 판단을 실행하세요."
-                  action={
-                    <Button onClick={() => run.run()} disabled={run.pending}>
-                      {run.pending ? "판단 중…" : "AI 판단 실행"}
-                    </Button>
-                  }
-                />
-              )}
-            </Card>
-          </Section>
-        </div>
-
-        {d && selected && (
-          <Section title="판단 결과" desc="안전 검사 전 · 아직 실행되지 않았습니다">
-            <div className="nx-verdict">
-              <div className="nx-verdict-main">
-                <span className="caption">선택한 행동</span>
-                <strong>{selected.label}</strong>
-                {d.rationale && <p>{d.rationale}</p>}
-              </div>
-              <div className="nx-verdict-side">
-                <ProviderChip provider={d.provider} fallbackReason={d.fallback_reason} />
-                <span className="mono caption">{d.decision_id} · {d.created_at}</span>
+        {chosen ? (
+          <div className="nx-verdict">
+            <div className="nx-verdict-main">
+              <span className="caption">AI 선택 · {chosen.id}</span>
+              <strong>{chosen.strategy}</strong>
+              <p>{analysis.rationale}</p>
+            </div>
+            <div className="nx-verdict-side">
+              <StepList plan={chosen} />
+              <div className="nx-verdict-meta">
+                <span>필요 승인</span>
+                <RoleChips roles={chosen.roles} />
               </div>
             </div>
-          </Section>
+          </div>
+        ) : (
+          <div className="nx-handoff">
+            <span className="nx-handoff-icon" aria-hidden="true"><Icon name="users" size={26} strokeWidth={1.8} /></span>
+            <div className="nx-handoff-main">
+              <span className="caption">AI가 이 판단을 사람에게 넘깁니다</span>
+              <strong>안전한 후보가 없습니다</strong>
+              <p>{analysis.rationale}</p>
+            </div>
+          </div>
         )}
 
-        {run.error != null && (
-          <Card>
-            <ErrorState error={run.error} onRetry={() => run.run()} />
-          </Card>
-        )}
+        <Section title="검증된 후보" desc="전략마다 행동을 이어 붙여 만든 계획 · Safety Gate와 시뮬레이션을 통과한 것만">
+          <ul className="nx-cands">
+            {analysis.candidates.map((c) => (
+              <li key={c.id} className={`nx-cand nx-cand--plan${c.id === chosen?.id ? " selected" : ""}`}>
+                <span className="nx-cand-dot" aria-hidden="true">{c.id === chosen?.id && <Icon name="check" size={12} strokeWidth={3} />}</span>
+                <div className="nx-cand-body">
+                  <div className="nx-cand-title">
+                    <strong>{c.strategy}</strong>
+                    <span className="mono caption">{c.id} · {c.steps.length}단계{c.pruned ? ` · 불필요한 단계 ${c.pruned}개 제거` : ""}</span>
+                  </div>
+                  <span className="nx-cand-steps">{c.stepText.join(" → ")}</span>
+                  <span className="nx-cand-meta">
+                    <b className={c.remaining.length ? "warn" : ""}>{c.remaining.length ? `남는 문제 ${c.remaining.length}` : "남는 문제 없음"}</b>
+                    <span>최고 {c.peak}°C</span>
+                    <span>냉각 {c.energy}kWh</span>
+                    <RoleChips roles={c.roles} />
+                  </span>
+                </div>
+                {c.id === chosen?.id && <StatusChip variant="mock">모의 선택</StatusChip>}
+              </li>
+            ))}
+            {!analysis.candidates.length && <li className="caption">Safety Gate를 통과한 후보가 없습니다.</li>}
+          </ul>
+        </Section>
+
         <div className="nx-actions">
-          <Button variant="secondary" onClick={() => run.run()} disabled={run.pending}>
-            {run.pending ? "판단 중…" : d ? "같은 입력으로 다시 판단" : "AI 판단 실행"}
-          </Button>
-          {d && isHandoff(selected) ? (
-            <Button arrow onClick={() => navigate(`/decision/${d.decision_id}/handoff`)}>
-              사람에게 넘김 보기
-            </Button>
+          <Button variant="secondary" onClick={() => navigate("/scenario")}>상황 다시 설정</Button>
+          {chosen ? (
+            <Button arrow onClick={() => navigate(`/decision/${r.no}/futures`)}>대안별 결과 보기</Button>
           ) : (
-            <Button arrow onClick={() => d && navigate(`/decision/${d.decision_id}/futures`)} disabled={!d}>
-              대안별 결과 보기
-            </Button>
+            <Button arrow onClick={() => navigate(`/decision/${r.no}/handoff`)}>사람에게 넘김 보기</Button>
           )}
         </div>
       </div>

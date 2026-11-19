@@ -24,18 +24,19 @@ interface Step {
 
 // 흐름: 처음에 상황과 조건을 정하고(01), 뒤로 갈수록 그 설정이 만든 결과를 본다(02~11).
 export const STEPS: Step[] = [
-  { no: "01", title: "상황 설정", part: 0, desc: "상황과 조건을 처음에 정합니다. 이후 화면은 모두 이 설정이 만든 결과입니다.", next: "02 운영 현황", match: (p) => p.startsWith("/scenario") },
-  { no: "02", title: "운영 현황", part: 1, desc: "설정한 상황에서 클러스터 상태와 조치가 필요한 사건을 봅니다.", next: "03 사건 상세", match: (p) => p.startsWith("/operations") },
+  { no: "01", title: "상황 설정", part: 0, desc: "노드 · 냉각 구역 · 일을 정합니다. 이후 화면은 모두 이 설정이 만든 결과입니다.", next: "02 운영 현황", match: (p) => p.startsWith("/scenario") },
+  { no: "02", title: "운영 현황", part: 1, desc: "설정한 상황의 노드와 일, 그리고 사건을 중요도 순으로 봅니다.", next: "03 사건 상세", match: (p) => p.startsWith("/operations") },
   { no: "03", title: "사건 상세", part: 1, desc: "AI를 부르기 전에 무엇이 문제이고 어떤 제약이 걸렸는지 확인합니다.", next: "04 운영 정책", match: (p) => p.startsWith("/incidents/") },
-  { no: "04", title: "운영 정책", part: 2, desc: "회사 규칙이 AI가 고를 수 있는 행동의 범위를 정합니다.", next: "05 의사결정 센터", match: (p) => p.startsWith("/policies") },
-  { no: "05", title: "의사결정 센터", part: 2, desc: "정책을 통과한 후보 중 AI가 무엇을 골랐는지 확인합니다.", next: "06 대안별 결과", match: (p) => /^\/decision\/[^/]+$/.test(p) },
-  { no: "06", title: "대안별 결과", part: 2, desc: "같은 상황에서 행동만 바꿨을 때의 5분 뒤를 나란히 비교합니다.", next: "07 안전 검사", match: (p) => p.endsWith("/futures") },
-  { no: "07", title: "안전 검사", part: 3, desc: "모델과 분리된 코드가 AI의 선택이 회사 규칙상 허용되는지 검사합니다.", next: "08 협업·승인", match: (p) => p.endsWith("/validate") },
-  { no: "08", title: "협업·승인", part: 3, desc: "권한 있는 담당자만 실행을 승인할 수 있습니다.", next: "09 실행 및 결과", match: (p) => p.startsWith("/approvals") },
-  { no: "08", alt: "08", title: "사람에게 넘김", part: 3, desc: "AI가 설비 조작 대신 사람에게 판단을 넘긴 경우입니다. 승인·실행 대신 요청이 기록됩니다.", next: "10 결정 영수증", match: (p) => p.endsWith("/handoff") },
-  { no: "09", title: "실행 및 결과", part: 3, desc: "실행 직전에 다시 검사한 뒤 가상 환경에서만 실행하고 결과를 비교합니다.", next: "10 결정 영수증", match: (p) => p.startsWith("/executions") },
-  { no: "10", title: "결정 영수증", part: 4, desc: "한 번의 결정에 대한 상황 · 후보 · 검사 · 승인 · 실행을 하나의 기록으로 봅니다.", next: "11 기록·분석", match: (p) => p.startsWith("/receipts") },
-  { no: "11", title: "기록·분석", part: 4, desc: "쌓인 결정 기록에서 실패 패턴을 찾아 정책과 시스템 개선으로 연결합니다.", match: (p) => p.startsWith("/analytics") },
+  { no: "04", title: "운영 정책", part: 2, desc: "회사 규칙과 멈추기 규칙이 AI가 고를 수 있는 계획의 범위를 정합니다.", next: "05 의사결정 센터", match: (p) => p.startsWith("/policies") },
+  { no: "05", title: "의사결정 센터", part: 2, desc: "검증된 계획(후보) 중 AI가 무엇을 골랐는지 확인합니다.", next: "06 대안별 결과", match: (p) => /^\/decision\/[^/]+$/.test(p) },
+  { no: "06", title: "대안별 결과", part: 2, desc: "같은 상황에서 계획만 바꿨을 때의 결과를 나란히 비교합니다.", next: "07 안전 검사", match: (p) => p.endsWith("/futures") },
+  { no: "07", title: "안전 검사", part: 3, desc: "모델과 분리된 코드가 고른 계획을 단계마다 다시 검사합니다.", next: "08 협업·승인", match: (p) => p.endsWith("/validate") },
+  { no: "08", title: "협업·승인", part: 3, desc: "계획에 필요한 역할이 각각 승인해야 실행됩니다.", next: "09 실행 및 결과", match: (p) => p.startsWith("/approvals") },
+  { no: "08", alt: "08", title: "사람에게 넘김", part: 3, desc: "안전한 계획이 없어 AI가 사람에게 판단을 넘긴 경우입니다. 설비는 건드리지 않고 요청이 기록됩니다.", next: "11 결정 영수증", match: (p) => p.endsWith("/handoff") },
+  { no: "09", title: "실행 및 결과", part: 3, desc: "실행 직전에 다시 검사한 뒤 가상 환경에서만 실행하고 결과를 비교합니다.", next: "10 회차 요약", match: (p) => p.startsWith("/executions") },
+  { no: "10", title: "회차 요약", part: 3, desc: "실행 뒤 상태로 남은 문제를 다시 계산해, 다음 회차로 갈지 멈출지 정합니다.", next: "05 다음 회차 또는 11 결정 영수증", match: (p) => p.startsWith("/rounds") },
+  { no: "11", title: "결정 영수증", part: 4, desc: "상황 설정부터 회차별 결정 · 승인 · 실행까지 하나의 기록으로 봅니다.", next: "12 기록·분석", match: (p) => p.startsWith("/receipts") },
+  { no: "12", title: "기록·분석", part: 4, desc: "쌓인 결정 기록에서 실패 패턴을 찾아 정책과 시스템 개선으로 연결합니다.", match: (p) => p.startsWith("/analytics") },
 ];
 const TOTAL = STEPS.filter((s) => !s.alt).length;
 

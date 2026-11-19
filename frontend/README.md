@@ -13,6 +13,14 @@ npm run dev                 # http://localhost:5173
 
 통합할 때는 `.env`에서 `VITE_API_MODE=live`로만 바꾼다(백엔드 `http://localhost:8000`).
 
+## 다중 작업 흐름 (명세 기준)
+
+- 화면 01~12: 상황 설정 → 운영 현황 → 사건 상세 → 운영 정책 → 의사결정 센터 → 대안별 결과 → 안전 검사 → 협업·승인(또는 사람에게 넘김) → 실행 및 결과 → 회차 요약 → 결정 영수증 → 기록·분석. 번호와 단계는 `src/components/common/StageGuide.tsx` 한 곳에서 관리.
+- 판단 계산: `src/sim/` (model = 상황 타입과 상수, engine = 사건 · 행동 · 전략 10종 · 정리 · Safety Gate · 회차). mock 모드에서 쓴다.
+- 실행 상태: `src/state/run.tsx` — mock이면 엔진, live면 `/api/v2`.
+- 백엔드 연결: `src/api/v2.ts` 한 파일이 MULTI_API.md 모양 ↔ 화면 모양을 바꾼다. 응답 모양이 바뀌면 이 파일만 고친다. 자세한 대응표는 `FRONT_V2_NOTE.md`.
+- 자동 시연: 주소 끝에 `?tour=1`(발표용 2분) · `?tour=full`(제출용 약 5분).
+
 ## 구조
 
 | 경로 | 내용 |
