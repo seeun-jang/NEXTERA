@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Candidate, Validation } from "@contracts/types";
 import { api } from "@/api/client";
 import { Button, Card, CheckRow, ErrorState, Icon, PageHeader, PageSkeleton, Section, StatusChip } from "@/components/common";
-import { FlowSteps } from "@/components/screens/FlowSteps";
 import { useAction, useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
 import { recallValidation, rememberValidation } from "@/state/decisionCache";
@@ -126,7 +125,6 @@ export default function ValidatePage() {
     <>
       {header}
       <div className="nx-content">
-        <FlowSteps current="AI 판단" />
 
         <div className="nx-split nx-split--gate">
           <Section title="검사 항목" desc="독립 검증 코드 · 모델 출력과 무관하게 실행" className="nx-split-main">
@@ -233,7 +231,7 @@ export default function ValidatePage() {
         </div>
 
         <div className="nx-actions">
-          <Button variant="secondary" onClick={() => navigate(`/decision/${id}`)}>
+          <Button variant="secondary" onClick={() => navigate(`/decision/${id}/futures`)}>
             허용된 대안 검토
           </Button>
           <Button

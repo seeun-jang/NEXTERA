@@ -42,8 +42,8 @@
 .nx-main { min-width: 0; display: flex; flex-direction: column; }
 
 /* ---------- PageHeader ---------- */
+.nx-headwrap { position: sticky; top: 0; z-index: 5; }
 .nx-header {
-  position: sticky; top: 0; z-index: 5;
   display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
   padding: 18px var(--nx-pad) 14px; background: rgba(255,255,255,.86);
   backdrop-filter: saturate(1.4) blur(10px);
@@ -239,7 +239,7 @@
 
 /* ---------- 차트 ---------- */
 .nx-chart text { font-family: var(--nx-font); font-size: 11px; fill: var(--nx-text-3); }
-.nx-chart .thr-label { font-size: 11px; font-weight: 700; fill: var(--nx-ink); }
+.nx-chart .thr-label { font-size: 11px; font-weight: 700; fill: var(--nx-ink); paint-order: stroke; stroke: var(--nx-surface, #fff); stroke-width: 4px; stroke-linejoin: round; }
 
 
 /* ---------- Stepper ---------- */
@@ -492,3 +492,67 @@
 .nx-mini--zoro { background: var(--nx-ink); color: #fff; }
 .nx-mini--assume { background: var(--nx-accent-soft); color: var(--nx-ink); border: 1px dashed var(--nx-accent-line); }
 .nx-receipt-note { display: flex; align-items: center; gap: 8px; justify-content: flex-end; font-size: 12px; color: var(--nx-text-3); }
+
+/* ---------- 단계 안내 띠 ---------- */
+.nx-header { border-top: 3px solid var(--stage, var(--nx-accent)); }
+.nx-stage { background: rgba(255,255,255,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--nx-border); padding: 10px var(--nx-pad) 10px; display: flex; flex-direction: column; gap: 8px; }
+.nx-stage-top { display: flex; align-items: center; gap: 14px; font-size: 13px; min-width: 0; }
+.nx-stage-part { display: inline-flex; align-items: center; gap: 8px; height: 26px; padding: 0 12px 0 10px; border-radius: 999px; font-weight: 700; color: var(--nx-ink); background: color-mix(in srgb, var(--stage) 14%, #fff); border: 1px solid color-mix(in srgb, var(--stage) 45%, #fff); white-space: nowrap; }
+.nx-stage-part i { width: 9px; height: 9px; border-radius: 50%; background: var(--stage); }
+.nx-stage-step { font-weight: 700; white-space: nowrap; }
+.nx-stage-step b { color: var(--nx-ink); }
+.nx-stage-desc { color: var(--nx-text-2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nx-stage-next { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--nx-text-2); padding-left: 14px; border-left: 1px solid var(--nx-border); }
+.nx-stage-next b { color: var(--nx-ink); }
+.nx-stage-bar { display: grid; grid-template-columns: 2fr 2fr 3fr 3fr 2fr; gap: 6px; }
+.nx-stage-seg { display: flex; flex-direction: column; gap: 4px; }
+.nx-stage-seg-name { font-size: 11px; color: var(--nx-text-3); font-weight: 500; }
+.nx-stage-seg.on .nx-stage-seg-name { color: var(--nx-ink); font-weight: 700; }
+.nx-stage-seg.done .nx-stage-seg-name { color: var(--nx-text-2); }
+.nx-stage-ticks { display: flex; gap: 3px; }
+.nx-stage-ticks span { flex: 1; height: 5px; border-radius: 99px; background: var(--nx-grid); }
+.nx-stage-ticks span.past { background: color-mix(in srgb, var(--seg) 55%, #fff); }
+.nx-stage-ticks span.cur { background: var(--seg); box-shadow: 0 0 0 2px color-mix(in srgb, var(--seg) 25%, #fff); }
+
+/* ---------- 08 병렬 미래 ---------- */
+.nx-futures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.nx-future { background: var(--nx-surface); border: 1px solid var(--nx-border); border-radius: var(--nx-radius-card); box-shadow: var(--nx-shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.nx-future.selected { border: 2px solid var(--nx-ink); padding: 15px 17px; }
+.nx-future-head { display: flex; align-items: center; gap: 12px; }
+.nx-future-head > div { display: flex; flex-direction: column; min-width: 0; }
+.nx-future-head strong { font-size: 15px; }
+.nx-future-pick { margin-left: auto; }
+.nx-future.selected .nx-abtag { background: var(--nx-ink); color: #fff; }
+.nx-changed--neutral { background: var(--nx-surface); border-color: var(--nx-border-strong); }
+.nx-changed--neutral .nx-changed-label { background: var(--nx-ink); }
+
+/* ---------- 13 기록·분석 ---------- */
+.nx-filters { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; padding: 12px 16px; background: var(--nx-surface); border: 1px solid var(--nx-border); border-radius: var(--nx-radius-card); }
+.nx-filter { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--nx-text-2); }
+.nx-filter select { height: 34px; min-width: 140px; border: 1px solid var(--nx-border-strong); border-radius: 10px; padding: 0 10px; font: inherit; font-size: 13.5px; color: var(--nx-ink); background: var(--nx-surface); }
+.nx-filters .nx-linkbtn { margin-bottom: 8px; }
+.nx-kpis--6 { grid-template-columns: repeat(6, 1fr); }
+.nx-kpis--6 .nx-kpi-value { font-size: 24px; }
+.nx-tbars { display: flex; flex-direction: column; gap: 14px; }
+.nx-tbars-legend { display: flex; gap: 18px; font-size: 12px; color: var(--nx-text-2); }
+.nx-tbars-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.nx-tbars-legend .sw { width: 14px; height: 10px; border-radius: 3px; background: var(--nx-accent); }
+.nx-tbars-legend .sw.hatch { background: repeating-linear-gradient(135deg, var(--nx-ink) 0 2px, transparent 2px 5px), var(--nx-accent); }
+.nx-tbar { display: grid; grid-template-columns: 110px 1fr 150px; gap: 12px; align-items: center; outline: none; }
+.nx-tbar-name { font-size: 13.5px; font-weight: 700; }
+.nx-tbar-track { position: relative; height: 22px; }
+.nx-tbar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--nx-accent); border-radius: 0 4px 4px 0; display: flex; justify-content: flex-end; overflow: hidden; }
+.nx-tbar-miss { height: 100%; background: repeating-linear-gradient(135deg, var(--nx-ink) 0 2px, transparent 2px 5px); border-left: 2px solid var(--nx-surface); }
+.nx-tbar-tip { position: absolute; left: 0; bottom: calc(100% + 6px); padding: 6px 10px; border-radius: 8px; background: var(--nx-ink); color: #fff; font-size: 12px; white-space: nowrap; opacity: 0; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease; pointer-events: none; z-index: 2; }
+.nx-tbar:hover .nx-tbar-tip, .nx-tbar:focus .nx-tbar-tip { opacity: 1; transform: none; }
+.nx-tbar:hover .nx-tbar-fill { filter: brightness(1.06); }
+.nx-tbar-val { font-size: 13.5px; font-weight: 700; }
+.nx-tbar-val small { font-weight: 500; color: var(--nx-text-2); font-size: 12px; }
+.nx-improve { display: inline-flex; align-items: center; gap: 6px; color: var(--nx-ink); }
+.nx-improve svg { color: var(--nx-accent); }
+.nx-row-link { cursor: pointer; }
+.nx-row-link:hover td { background: color-mix(in srgb, var(--nx-accent) 12%, #fff); }
+
+/* 차트가 격자 칸을 밀어내지 않게 */
+.nx-chart { display: block; max-width: 100%; height: auto; }
+.nx-futures > *, .nx-split > *, .nx-abgrid > * { min-width: 0; }

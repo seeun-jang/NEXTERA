@@ -42,7 +42,7 @@ export default function App() {
 function NotFound() {
   return (
     <>
-      <PageHeader crumbs={["NEXTERA"]} title="화면을 찾을 수 없습니다" />
+      <PageHeader crumbs={["NEXTERA"]} title="화면을 찾을 수 없습니다" guide={false} />
       <div className="nx-content">
         <Card>
           <EmptyState

@@ -33,7 +33,7 @@ interface Props {
   ariaLabel: string;
 }
 
-const DEFAULT_W = 560;
+const DEFAULT_W = 320; // 측정 전 임시 폭(작게 시작해야 칸을 밀어내지 않음)
 const PAD = { top: 14, right: 40, bottom: 24, left: 30 };
 
 const STROKE: Record<NonNullable<ChartSeries["style"]>, { color: string; dash?: string; width: number }> = {
@@ -65,7 +65,7 @@ export function TempChart({ series, thresholds = [], xDomain, yDomain, xTicks, y
   const clampY = (y: number) => Math.min(yDomain[1], Math.max(yDomain[0], y));
 
   return (
-    <div ref={ref} style={{ width: "100%" }}>
+    <div ref={ref} style={{ width: "100%", minWidth: 0, overflow: "hidden" }}>
     <svg className="nx-chart" viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label={ariaLabel}>
       {yTicks.map((t) => (
         <g key={`y${t}`}>
@@ -92,9 +92,6 @@ export function TempChart({ series, thresholds = [], xDomain, yDomain, xTicks, y
             strokeDasharray={th.kind === "throttle" ? "4 4" : undefined}
             strokeWidth={th.kind === "limit" ? 1.5 : 1}
           />
-          <text className="thr-label" x={PAD.left + 6} y={sy(th.y) - 5}>
-            {th.label}
-          </text>
         </g>
       ))}
 
@@ -146,6 +143,11 @@ export function TempChart({ series, thresholds = [], xDomain, yDomain, xTicks, y
           </g>
         );
       })}
+      {thresholds.map((th) => (
+        <text key={`l-${th.label}`} className="thr-label" x={PAD.left + 6} y={th.kind === "throttle" ? sy(th.y) + 13 : sy(th.y) - 5}>
+          {th.label}
+        </text>
+      ))}
     </svg>
     </div>
   );

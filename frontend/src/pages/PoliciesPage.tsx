@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import type { ActionType, Policy } from "@contracts/types";
 import { api } from "@/api/client";
 import { Button, Card, ErrorState, Icon, PageHeader, PageSkeleton, PolicyTag, Section, StatusChip } from "@/components/common";
-import { FlowSteps } from "@/components/screens/FlowSteps";
 import { POLICY_TYPE_LABEL } from "@/components/screens/labels";
 import { useAction, useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
@@ -67,7 +66,6 @@ export default function PoliciesPage() {
     <>
       {header}
       <div className="nx-content">
-        <FlowSteps current="정책 확인" />
 
         <div className="nx-split">
           <Section

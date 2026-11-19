@@ -219,6 +219,9 @@ export default function ComparePage() {
           <Button variant="secondary" onClick={() => navigate("/lab/S0")}>
             조건 다시 바꾸기
           </Button>
+          <Button variant="secondary" onClick={() => navigate(`/decision/${decisionId ?? A.decision.decision_id}/futures`)}>
+            대안별 예상 결과 보기
+          </Button>
           <Button arrow onClick={() => navigate(`/decision/${decisionId ?? A.decision.decision_id}/validate`)}>
             실행 전 안전 검사
           </Button>

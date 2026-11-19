@@ -545,6 +545,17 @@ export const mockApi: NexteraApi = {
       deadline_met: { met: 21, total: 24 },
       consistency: { same: 23, total: 24 },
       results: { succeeded: 20, held: 3, failed: 1 },
+      by_type: [
+        { type: "열 위험", decisions: 11, missed: 1 },
+        { type: "승인 지연", decisions: 6, missed: 2 },
+        { type: "용량 부족", decisions: 4, missed: 0 },
+        { type: "정비 일정", decisions: 3, missed: 0 },
+      ],
+      patterns: [
+        { pattern: "승인 지연으로 마감 초과", count: 2, decision_id: "DR-0408-03", action: "대결자(대신 승인할 사람) 경로 정책 검토" },
+        { pattern: "재시작 시간 과소 추정", count: 1, decision_id: "DR-0410-02", action: "재시작 추정값 보정" },
+        { pattern: "여유 없는 노드로 강제 이동", count: 3, decision_id: "DR-0412-01", action: "입력 단계 경고 추가 · 모두 차단됨" },
+      ],
       recent: [
         { decision_id: "DR-0412-01", incident_id: "INC-0412", action_label: "J07을 N2로 이동", status: "executed", deadline_met: true },
         { decision_id: "DR-0410-02", incident_id: "INC-0410", action_label: "J05 연기", status: "executed", deadline_met: false },

@@ -27,6 +27,13 @@
   --nx-shadow: 0 1px 2px rgba(16, 30, 54, .04), 0 10px 28px rgba(16, 30, 54, .07);
   --nx-shadow-lg: 0 24px 60px rgba(4, 12, 28, .35);
 
+  /* 단계 식별색(상태 의미 없음, 항상 글자와 함께) — dataviz 검증: 인접 단계 색맹 ΔE ≥ 9.6 */
+  --st-1: #1baf7a; /* 상황 */
+  --st-2: #2a78d6; /* 판단 */
+  --st-3: #eb6834; /* 판단 실험 */
+  --st-4: #6250d6; /* 통제된 실행 */
+  --st-5: #e87ba4; /* 결정 영수증 */
+
   --nx-radius-card: 16px;
   --nx-radius-inner: 8px;
   --nx-radius-pill: 999px;

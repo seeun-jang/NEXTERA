@@ -4,6 +4,7 @@ import { API_MODE } from "@/api/client";
 import { ROLE_LABEL } from "@/api/role";
 import { useDemo } from "@/state/DemoContext";
 import { Icon, type IconName } from "./Icon";
+import { PARTS, stepOf } from "./StageGuide";
 
 interface NavItem {
   label: string;
@@ -67,7 +68,7 @@ export function AppShell() {
         </div>
       </aside>
 
-      <main className="nx-main">
+      <main className="nx-main" style={{ ["--stage" as string]: stepOf(pathname) ? PARTS[stepOf(pathname)!.part].color : "var(--nx-accent)" }}>
         <Outlet />
       </main>
     </div>

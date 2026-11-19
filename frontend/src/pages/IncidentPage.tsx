@@ -1,7 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "@/api/client";
 import { Button, Card, ErrorState, Icon, PageHeader, PageSkeleton, PolicyTag, PriorityBadge, Section, StatusChip, TempChart, type IconName } from "@/components/common";
-import { FlowSteps } from "@/components/screens/FlowSteps";
 import { useApi } from "@/hooks/useApi";
 
 // SCREEN 03 · 사건 상세 — AI를 부르기 전에 무엇이 문제이고 어떤 제약이 걸려 있는지 사람이 먼저 이해하는 화면.
@@ -92,7 +91,6 @@ export default function IncidentPage() {
     <>
       {header}
       <div className="nx-content">
-        <FlowSteps current="사건 확인" />
 
         <div className="nx-split">
           <Section

@@ -9,3 +9,4 @@ export { Icon, type IconName } from "./Icon";
 export { TempChart, type ChartSeries, type ChartThreshold } from "./TempChart";
 export { Stepper, type Step } from "./Stepper";
 export { Section } from "./Section";
+export { StageGuide, PARTS, STEPS, stepOf } from "./StageGuide";

@@ -4,7 +4,6 @@ import type { DecideResponse } from "@contracts/types";
 import { api } from "@/api/client";
 import { Button, Card, EmptyState, ErrorState, PageHeader, PageSkeleton, PolicyTag, ProviderChip, Section, StatusChip } from "@/components/common";
 import { CandidateList } from "@/components/screens/CandidateList";
-import { FlowSteps } from "@/components/screens/FlowSteps";
 import { useAction, useApi } from "@/hooks/useApi";
 import { useDemo } from "@/state/DemoContext";
 import { recallDecision, rememberDecision } from "@/state/decisionCache";
@@ -79,7 +78,6 @@ export default function DecisionPage() {
     <>
       {header}
       <div className="nx-content">
-        <FlowSteps current="AI 판단" />
 
         <div className={`nx-modelbar${d?.provider === "zoro1" ? " live" : ""}`}>
           <div>

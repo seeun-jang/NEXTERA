@@ -17,6 +17,10 @@ export interface AnalyticsResponse {
   consistency: { same: number; total: number };
   results: { succeeded: number; held: number; failed: number };
   recent: { decision_id: string; incident_id: string; action_label: string; status: Receipt["status"]; deadline_met: boolean | null }[];
+  /** 사건 유형별 결정 건수와 그중 마감 미준수 */
+  by_type: { type: string; decisions: number; missed: number }[];
+  /** 실패 패턴 → 대표 기록 → 개선 조치 */
+  patterns: { pattern: string; count: number; decision_id: string; action: string }[];
 }
 
 /** §5 API 계약의 프론트 쪽 시그니처. mock과 live가 똑같이 구현한다. */
